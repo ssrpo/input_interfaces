@@ -1,0 +1,6 @@
+franka_gripper:
+  ros__parameters:
+    gripper_closed_width: 0.0
+    gripper_open_width: 0.6
+    gripper_closing_speed: 0.03 
+    gripper_closing_force: 50
