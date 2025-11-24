@@ -57,9 +57,6 @@ ament_target_dependencies(joystick_input_node
 rosidl_target_interfaces(joystick_input_node
   ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-
-ament_export_dependencies(rosidl_default_runtime)
-
 # Ensure executables depend on the message target
 add_dependencies(joystick_input_node ${PROJECT_NAME}__rosidl_typesupport_cpp)
 
