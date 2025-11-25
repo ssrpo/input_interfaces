@@ -1,0 +1,7 @@
+joystick_input:
+  ros__parameters:
+    allow_full_mode: false    # Only true for developper use.
+    start_mode: "TRANSLATION" # Can be "TRANSLATION_ROTATION", "ROTATION", "TRANSLATION" or "BOTH" (if allowed)
+    linear_scale: 0.035  # Scale factor for linear velocity commands.
+    z_axis_scale: 0.025  # Scale factor for Z axis that is more sensible than X, Y.
+    angular_scale: 5.0   # Scale factor for angular velocity commands.
