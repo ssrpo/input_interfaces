@@ -5,3 +5,19 @@ joystick_input:
     linear_scale: 0.035  # Scale factor for linear velocity commands.
     z_axis_scale: 0.025  # Scale factor for Z axis that is more sensible than X, Y.
     angular_scale: 5.0   # Scale factor for angular velocity commands.
+
+    # /joy (Kinova joystick) mapping: start from Franka defaults, adjust after testing
+    joy_translation_axes: [0, 2, 1]
+    joy_translation_signs: [ 1.0,  1.0,  1.0]
+    joy_rotation_axes: [1, 0, 2]
+    joy_rotation_signs: [ 1.0,  -1.0,  -1.0]
+
+    # /spacenav/joy (SpaceMouse) mapping for Kinova (same as Franka for now)
+    spacenav_translation_axes: [4, 3, 5]
+    spacenav_translation_signs: [ 1.0, -1.0,  1.0]
+    spacenav_rotation_axes: [4, 3, 5]
+    spacenav_rotation_signs: [ 1.0, 1.0, -1.0]
+
+    # Buttons mapping (override as needed for Kinova joystick)
+    mode_button_joy: 11
+    mode_button_spacenav: 1
