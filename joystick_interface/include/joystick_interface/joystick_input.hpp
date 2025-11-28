@@ -21,6 +21,27 @@ namespace input_interfaces
     BOTH
   };
 
+  /// @brief Struct holding axis and button mapping configuration.
+  struct JoystickMapping
+  {
+    // /joy (3D joystick) mapping
+    std::vector<int> joy_translation_axes{1, 0, 2};
+    std::vector<int> joy_rotation_axes{0, 1, 2};
+    std::vector<double> joy_translation_signs{1.0, 1.0, 1.0};
+    std::vector<double> joy_rotation_signs{-1.0, -1.0, -1.0};
+
+    // /spacenav/joy (SpaceMouse) mapping
+    std::vector<int> spacenav_translation_axes{4, 3, 5};
+    std::vector<int> spacenav_rotation_axes{3, 4, 5};
+    std::vector<double> spacenav_translation_signs{1.0, -1.0, 1.0};
+    std::vector<double> spacenav_rotation_signs{1.0, -1.0, -1.0};
+
+    // Buttons
+    int mode_button_joy{11};       
+    int mode_button_spacenav{1}; 
+
+  };
+
   /// @brief Node that will subscribe either to a SpaceMouse or a normal joystick, and send out
   /// teloep_cmd messages (twist + mode of command) on the topic /teleop_cmd
   class JoystickInput : public rclcpp::Node
@@ -37,6 +58,9 @@ namespace input_interfaces
     /// @brief A configuration parameter to enable or disable access to the TRANSLATION or BOTH
     /// modes.
     bool allow_full_mode_{false};
+
+    /// @brief Configuration mapping for axes and buttons.
+    JoystickMapping mapping_{};
 
     /// @brief Callback function to process incoming Joy messages from the SpaceMouse.
     void joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg);
