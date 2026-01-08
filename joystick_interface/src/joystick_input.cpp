@@ -4,6 +4,7 @@ namespace input_interfaces
 {
   JoystickInput::JoystickInput() : Node("joystick_input")
   {
+    typedef extender_msgs::msg::TeleopCommand Mode;
 
     // Declare parameters for scaling factors with default values.
     this->declare_parameter<bool>("allow_full_mode",
@@ -14,16 +15,22 @@ namespace input_interfaces
     this->declare_parameter("angular_scale", 0.2);
 
     // Vector parameters for joystick (/joy) mapping
-    this->declare_parameter<std::vector<int>>("joy_translation_axes", mapping_.joy_translation_axes);
+    this->declare_parameter<std::vector<int>>("joy_translation_axes",
+                                              mapping_.joy_translation_axes);
     this->declare_parameter<std::vector<int>>("joy_rotation_axes", mapping_.joy_rotation_axes);
-    this->declare_parameter<std::vector<double>>("joy_translation_signs", mapping_.joy_translation_signs);
+    this->declare_parameter<std::vector<double>>("joy_translation_signs",
+                                                 mapping_.joy_translation_signs);
     this->declare_parameter<std::vector<double>>("joy_rotation_signs", mapping_.joy_rotation_signs);
 
     // Vector parameters for SpaceMouse (/spacenav/joy) mapping
-    this->declare_parameter<std::vector<int>>("spacenav_translation_axes", mapping_.spacenav_translation_axes);
-    this->declare_parameter<std::vector<int>>("spacenav_rotation_axes", mapping_.spacenav_rotation_axes);
-    this->declare_parameter<std::vector<double>>("spacenav_translation_signs", mapping_.spacenav_translation_signs);
-    this->declare_parameter<std::vector<double>>("spacenav_rotation_signs", mapping_.spacenav_rotation_signs);
+    this->declare_parameter<std::vector<int>>("spacenav_translation_axes",
+                                              mapping_.spacenav_translation_axes);
+    this->declare_parameter<std::vector<int>>("spacenav_rotation_axes",
+                                              mapping_.spacenav_rotation_axes);
+    this->declare_parameter<std::vector<double>>("spacenav_translation_signs",
+                                                 mapping_.spacenav_translation_signs);
+    this->declare_parameter<std::vector<double>>("spacenav_rotation_signs",
+                                                 mapping_.spacenav_rotation_signs);
 
     this->declare_parameter("mode_button_joy", mapping_.mode_button_joy);
     this->declare_parameter("mode_button_spacenav", mapping_.mode_button_spacenav);
@@ -33,12 +40,15 @@ namespace input_interfaces
     z_axis_scale_ = this->get_parameter("z_axis_scale").as_double();
     angular_scale_ = this->get_parameter("angular_scale").as_double();
 
-    // Load mapping params 
-    auto joy_translation_axes_param = this->get_parameter("joy_translation_axes").as_integer_array();
-    mapping_.joy_translation_axes.assign(joy_translation_axes_param.begin(), joy_translation_axes_param.end());
+    // Load mapping params
+    auto joy_translation_axes_param =
+        this->get_parameter("joy_translation_axes").as_integer_array();
+    mapping_.joy_translation_axes.assign(joy_translation_axes_param.begin(),
+                                         joy_translation_axes_param.end());
 
     auto joy_rotation_axes_param = this->get_parameter("joy_rotation_axes").as_integer_array();
-    mapping_.joy_rotation_axes.assign(joy_rotation_axes_param.begin(), joy_rotation_axes_param.end());
+    mapping_.joy_rotation_axes.assign(joy_rotation_axes_param.begin(),
+                                      joy_rotation_axes_param.end());
 
     mapping_.joy_translation_signs = this->get_parameter("joy_translation_signs").as_double_array();
     mapping_.joy_rotation_signs = this->get_parameter("joy_rotation_signs").as_double_array();
@@ -81,17 +91,18 @@ namespace input_interfaces
     RCLCPP_INFO(this->get_logger(), "Joystick Controller - angular_scale: %.4f", angular_scale_);
 
     // Print mapping for debugging.
+    RCLCPP_INFO(
+        this->get_logger(),
+        "[joy] axes trans=%d,%d,%d signs=%.1f,%.1f,%.1f rot=%d,%d,%d signs=%.1f,%.1f,%.1f btn=%d",
+        mapping_.joy_translation_axes[0], mapping_.joy_translation_axes[1],
+        mapping_.joy_translation_axes[2], mapping_.joy_translation_signs[0],
+        mapping_.joy_translation_signs[1], mapping_.joy_translation_signs[2],
+        mapping_.joy_rotation_axes[0], mapping_.joy_rotation_axes[1], mapping_.joy_rotation_axes[2],
+        mapping_.joy_rotation_signs[0], mapping_.joy_rotation_signs[1],
+        mapping_.joy_rotation_signs[2], mapping_.mode_button_joy);
     RCLCPP_INFO(this->get_logger(),
-                "[joy] axes trans=%d,%d,%d signs=%.1f,%.1f,%.1f rot=%d,%d,%d signs=%.1f,%.1f,%.1f btn=%d",
-                mapping_.joy_translation_axes[0], mapping_.joy_translation_axes[1],
-                mapping_.joy_translation_axes[2], mapping_.joy_translation_signs[0],
-                mapping_.joy_translation_signs[1], mapping_.joy_translation_signs[2],
-                mapping_.joy_rotation_axes[0], mapping_.joy_rotation_axes[1],
-                mapping_.joy_rotation_axes[2], mapping_.joy_rotation_signs[0],
-                mapping_.joy_rotation_signs[1], mapping_.joy_rotation_signs[2],
-                mapping_.mode_button_joy);
-    RCLCPP_INFO(this->get_logger(),
-                "[spacenav] axes trans=%d,%d,%d signs=%.1f,%.1f,%.1f rot=%d,%d,%d signs=%.1f,%.1f,%.1f btn=%d",
+                "[spacenav] axes trans=%d,%d,%d signs=%.1f,%.1f,%.1f rot=%d,%d,%d "
+                "signs=%.1f,%.1f,%.1f btn=%d",
                 mapping_.spacenav_translation_axes[0], mapping_.spacenav_translation_axes[1],
                 mapping_.spacenav_translation_axes[2], mapping_.spacenav_translation_signs[0],
                 mapping_.spacenav_translation_signs[1], mapping_.spacenav_translation_signs[2],
@@ -102,8 +113,7 @@ namespace input_interfaces
 
     // Create a subscription to the SpaceMouse Joy messages on "/spacenav/joy".
     spacenav_joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
-        "/spacenav/joy", 10,
-        std::bind(&JoystickInput::joyCallback, this, std::placeholders::_1));
+        "/spacenav/joy", 10, std::bind(&JoystickInput::joyCallback, this, std::placeholders::_1));
 
     // Create a subscription to the 3D joystick Joy messages on "/joy".
     joy_subscriber_ = this->create_subscription<sensor_msgs::msg::Joy>(
@@ -111,7 +121,7 @@ namespace input_interfaces
 
     // Publisher for custom msg : Twist + teleop mode + gripper command
     teleop_cmd_publisher_ =
-        this->create_publisher<joystick_interface::msg::TeleopCmd>("/teleop_cmd", 10);
+        this->create_publisher<extender_msgs::msg::TeleopCommand>("/teleop_cmd", 10);
 
     RCLCPP_INFO(this->get_logger(), "Joystick Controller node initialized");
   }
@@ -119,7 +129,9 @@ namespace input_interfaces
   // Callback for /joy (3D joystick)
   void JoystickInput::joy3dCallback(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
-    joystick_interface::msg::TeleopCmd cmd_msg;
+    typedef extender_msgs::msg::TeleopCommand Mode;
+
+    extender_msgs::msg::TeleopCommand cmd_msg;
 
     // Update current button states from message (joystick mode button)
     if (mapping_.mode_button_joy >= 0 &&
@@ -136,26 +148,41 @@ namespace input_interfaces
         // TRANSLATION_ROTATION → ROTATION → TRANSLATION → BOTH → TRANSLATION_ROTATION ...
         switch (current_mode_)
         {
-        case Mode::TRANSLATION_ROTATION: current_mode_ = Mode::ROTATION; break;
-        case Mode::ROTATION:             current_mode_ = Mode::TRANSLATION; break;
-        case Mode::TRANSLATION:          current_mode_ = Mode::BOTH; break;
-        case Mode::BOTH:                 current_mode_ = Mode::TRANSLATION_ROTATION; break;
+        case Mode::TRANSLATION_ROTATION:
+          current_mode_ = Mode::ROTATION;
+          break;
+        case Mode::ROTATION:
+          current_mode_ = Mode::TRANSLATION;
+          break;
+        case Mode::TRANSLATION:
+          current_mode_ = Mode::BOTH;
+          break;
+        case Mode::BOTH:
+          current_mode_ = Mode::TRANSLATION_ROTATION;
+          break;
         }
       }
       else
       {
-        current_mode_ = (current_mode_ == Mode::TRANSLATION_ROTATION)
-                            ? Mode::ROTATION
-                            : Mode::TRANSLATION_ROTATION;
+        current_mode_ = (current_mode_ == Mode::TRANSLATION_ROTATION) ? Mode::ROTATION
+                                                                      : Mode::TRANSLATION_ROTATION;
       }
 
       const char *mode_str = "";
       switch (current_mode_)
       {
-      case Mode::TRANSLATION_ROTATION: mode_str = "TRANSLATION_ROTATION"; break;
-      case Mode::ROTATION:             mode_str = "ROTATION"; break;
-      case Mode::TRANSLATION:          mode_str = "TRANSLATION"; break;
-      case Mode::BOTH:                 mode_str = "BOTH"; break;
+      case Mode::TRANSLATION_ROTATION:
+        mode_str = "TRANSLATION_ROTATION";
+        break;
+      case Mode::ROTATION:
+        mode_str = "ROTATION";
+        break;
+      case Mode::TRANSLATION:
+        mode_str = "TRANSLATION";
+        break;
+      case Mode::BOTH:
+        mode_str = "BOTH";
+        break;
       }
       RCLCPP_INFO(this->get_logger(), "[joy] Mode switched to %s", mode_str);
     }
@@ -176,8 +203,7 @@ namespace input_interfaces
 
       // Helper: compute one twist component from axis index + sign + scale
       auto computeComponent = [&](const std::vector<int> &axis_indices,
-                                  const std::vector<double> &axis_signs,
-                                  size_t component_index,
+                                  const std::vector<double> &axis_signs, size_t component_index,
                                   double scale_factor) -> double {
         if (component_index >= axis_indices.size() || component_index >= axis_signs.size())
         {
@@ -229,7 +255,9 @@ namespace input_interfaces
   // Callback for /spacenav/joy (SpaceMouse)
   void JoystickInput::joyCallback(const sensor_msgs::msg::Joy::SharedPtr msg)
   {
-    joystick_interface::msg::TeleopCmd cmd_msg;
+    typedef extender_msgs::msg::TeleopCommand Mode;
+
+    extender_msgs::msg::TeleopCommand cmd_msg;
 
     // Update current button states from message (spacenav mode button)
     if (mapping_.mode_button_spacenav >= 0 &&
@@ -246,26 +274,41 @@ namespace input_interfaces
         // TRANSLATION_ROTATION → ROTATION → TRANSLATION → BOTH → TRANSLATION_ROTATION ...
         switch (current_mode_)
         {
-        case Mode::TRANSLATION_ROTATION: current_mode_ = Mode::ROTATION; break;
-        case Mode::ROTATION:             current_mode_ = Mode::TRANSLATION; break;
-        case Mode::TRANSLATION:          current_mode_ = Mode::TRANSLATION_ROTATION; break;
-        case Mode::BOTH:                 current_mode_ = Mode::TRANSLATION_ROTATION; break;
+        case Mode::TRANSLATION_ROTATION:
+          current_mode_ = Mode::ROTATION;
+          break;
+        case Mode::ROTATION:
+          current_mode_ = Mode::TRANSLATION;
+          break;
+        case Mode::TRANSLATION:
+          current_mode_ = Mode::TRANSLATION_ROTATION;
+          break;
+        case Mode::BOTH:
+          current_mode_ = Mode::TRANSLATION_ROTATION;
+          break;
         }
       }
       else
       {
-        current_mode_ = (current_mode_ == Mode::TRANSLATION_ROTATION)
-                            ? Mode::ROTATION
-                            : Mode::TRANSLATION_ROTATION;
+        current_mode_ = (current_mode_ == Mode::TRANSLATION_ROTATION) ? Mode::ROTATION
+                                                                      : Mode::TRANSLATION_ROTATION;
       }
 
       const char *mode_str = "";
       switch (current_mode_)
       {
-      case Mode::TRANSLATION_ROTATION: mode_str = "TRANSLATION_ROTATION"; break;
-      case Mode::ROTATION:             mode_str = "ROTATION"; break;
-      case Mode::TRANSLATION:          mode_str = "TRANSLATION"; break;
-      case Mode::BOTH:                 mode_str = "BOTH"; break;
+      case Mode::TRANSLATION_ROTATION:
+        mode_str = "TRANSLATION_ROTATION";
+        break;
+      case Mode::ROTATION:
+        mode_str = "ROTATION";
+        break;
+      case Mode::TRANSLATION:
+        mode_str = "TRANSLATION";
+        break;
+      case Mode::BOTH:
+        mode_str = "BOTH";
+        break;
       }
       RCLCPP_INFO(this->get_logger(), "[spacenav] Mode switched to %s", mode_str);
     }
@@ -284,8 +327,7 @@ namespace input_interfaces
       };
 
       auto computeComponent = [&](const std::vector<int> &axis_indices,
-                                  const std::vector<double> &axis_signs,
-                                  size_t component_index,
+                                  const std::vector<double> &axis_signs, size_t component_index,
                                   double scale_factor) -> double {
         if (component_index >= axis_indices.size() || component_index >= axis_signs.size())
         {

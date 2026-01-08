@@ -4,23 +4,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
-#include "joystick_interface/msg/teleop_cmd.hpp"
+#include "extender_msgs/msg/teleop_command.hpp"
 
 namespace input_interfaces
 {
-  /// @brief Supported teleoperation modes.
-  /// Possible modes are :
-  /// - TRANSLATION_ROTATION - Default mode allowing simultaneous translation and rotation.
-  /// - ROTATION - Mode restricted to only rotational movements.
-  /// - TRANSLATION - Mode restricted to only translational movements.
-  enum class Mode
-  {
-    TRANSLATION_ROTATION,
-    ROTATION,
-    TRANSLATION,
-    BOTH
-  };
-
   /// @brief Struct holding axis and button mapping configuration.
   struct JoystickMapping
   {
@@ -53,7 +40,7 @@ namespace input_interfaces
 
   private:
     /// @brief The current teleoperation mode. Defaults to TRANSLATION_ROTATION.
-    Mode current_mode_{Mode::TRANSLATION_ROTATION};
+    uint8_t current_mode_{extender_msgs::msg::TeleopCommand::TRANSLATION_ROTATION};
 
     /// @brief A configuration parameter to enable or disable access to the TRANSLATION or BOTH
     /// modes.
@@ -83,7 +70,7 @@ namespace input_interfaces
     rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
 
     /// @brief Publisher for the custom `TeleopCmd` message on the `/teleop_cmd` topic.
-    rclcpp::Publisher<joystick_interface::msg::TeleopCmd>::SharedPtr teleop_cmd_publisher_;
+    rclcpp::Publisher<extender_msgs::msg::TeleopCommand>::SharedPtr teleop_cmd_publisher_;
 
     // Button state handling variables to detect single presses
     int last_button_1_{0}; ///< Stores the previous state of button 1 (mode toggle).
