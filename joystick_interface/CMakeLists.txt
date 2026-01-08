@@ -14,10 +14,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-
+find_package(extender_msgs REQUIRED)
 
 ### Franka dependencies
 set(FRANKA_DEPS
@@ -27,18 +26,6 @@ foreach(dep IN ITEMS ${FRANKA_DEPS})
   find_package(${dep} REQUIRED)
 endforeach()
 
-# Message generation
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "msg/TeleopCmd.msg"
-  DEPENDENCIES geometry_msgs std_msgs
-)
-
-# Include header directories
-include_directories(
-  include
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/rosidl_generator_cpp>
-  $<INSTALL_INTERFACE:include>
-)
 
 # Add the executable for the teleoperation node
 add_executable(joystick_input_node
@@ -51,15 +38,13 @@ ament_target_dependencies(joystick_input_node
   rclcpp
   sensor_msgs
   geometry_msgs
+  extender_msgs
 )
 
-# Link generated message code
-rosidl_target_interfaces(joystick_input_node
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
-
-# Ensure executables depend on the message target
-add_dependencies(joystick_input_node ${PROJECT_NAME}__rosidl_typesupport_cpp)
-
+target_include_directories(joystick_input_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
 # Add the executable for the franka gripper
 add_executable(franka_gripper_node
@@ -73,15 +58,15 @@ ament_target_dependencies(franka_gripper_node
   ${FRANKA_DEPS}
 )
 
-# Link generated message code
-rosidl_target_interfaces(franka_gripper_node
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_include_directories(franka_gripper_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 
-
-ament_export_dependencies(rosidl_default_runtime)
-
-# Ensure executables depend on the message target
-add_dependencies(franka_gripper_node ${PROJECT_NAME}__rosidl_typesupport_cpp)
+# Also, ensure you install the include directory if you plan to use these headers elsewhere
+install(DIRECTORY include/
+  DESTINATION include
+)
 
 # Install the executable
 install(TARGETS
