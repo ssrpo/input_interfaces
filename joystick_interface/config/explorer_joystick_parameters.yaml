@@ -1,0 +1,23 @@
+joystick_input_node:
+  ros__parameters:
+    allow_full_mode: true # Only true for developper use. enable_directional_shaping must be false.
+    start_mode: "TRANSLATION_ROTATION" # Can be "TRANSLATION_ROTATION", "ROTATION", "TRANSLATION" or "BOTH" (if allowed)
+    linear_scale: 0.035 # Scale factor for linear velocity commands.
+    z_axis_scale: 0.025 # Scale factor for Z axis that is more sensible than X, Y.
+    angular_scale: 0.200 # Scale factor for angular velocity commands.
+
+    # /joy  mapping: indices and signs
+    joy_translation_axes: [0, 1, 2]
+    joy_translation_signs: [1.0, -1.0, 1.0]
+    joy_rotation_axes: [0, 1, 2]
+    joy_rotation_signs: [-1.0, -1.0, -1.0]
+
+    # /spacenav/joy  mapping: indices and signs
+    spacenav_translation_axes: [4, 3, 5]
+    spacenav_translation_signs: [1.0, -1.0, 1.0]
+    spacenav_rotation_axes: [3, 4, 5]
+    spacenav_rotation_signs: [1.0, -1.0, -1.0]
+
+    # Buttons mapping
+    mode_button_joy: 11
+    mode_button_spacenav: 1

@@ -46,6 +46,8 @@ namespace input_interfaces
     /// modes.
     bool allow_full_mode_{false};
 
+    std::string mode_str_;
+
     /// @brief Configuration mapping for axes and buttons.
     JoystickMapping mapping_{};
 

@@ -150,15 +150,19 @@ namespace input_interfaces
         {
         case Mode::TRANSLATION_ROTATION:
           current_mode_ = Mode::ROTATION;
+          mode_str_ = "ROTATION";
           break;
         case Mode::ROTATION:
           current_mode_ = Mode::TRANSLATION;
+          mode_str_ = "TRANSLATION";
           break;
         case Mode::TRANSLATION:
           current_mode_ = Mode::BOTH;
+          mode_str_ = "BOTH";
           break;
         case Mode::BOTH:
           current_mode_ = Mode::TRANSLATION_ROTATION;
+          mode_str_ = "TRANSLATION_ROTATION";
           break;
         }
       }
@@ -166,25 +170,10 @@ namespace input_interfaces
       {
         current_mode_ = (current_mode_ == Mode::TRANSLATION_ROTATION) ? Mode::ROTATION
                                                                       : Mode::TRANSLATION_ROTATION;
+        mode_str_ = (current_mode_ == Mode::TRANSLATION_ROTATION) ? "TRANSLATION_ROTATION"
+                                                                    : "ROTATION";
       }
-
-      const char *mode_str = "";
-      switch (current_mode_)
-      {
-      case Mode::TRANSLATION_ROTATION:
-        mode_str = "TRANSLATION_ROTATION";
-        break;
-      case Mode::ROTATION:
-        mode_str = "ROTATION";
-        break;
-      case Mode::TRANSLATION:
-        mode_str = "TRANSLATION";
-        break;
-      case Mode::BOTH:
-        mode_str = "BOTH";
-        break;
-      }
-      RCLCPP_INFO(this->get_logger(), "[joy] Mode switched to %s", mode_str);
+      RCLCPP_INFO(this->get_logger(), "[joy] Mode switched to %s", mode_str_.c_str());
     }
 
     last_button_1_ = cur_button_1_;
@@ -276,15 +265,19 @@ namespace input_interfaces
         {
         case Mode::TRANSLATION_ROTATION:
           current_mode_ = Mode::ROTATION;
+          mode_str_ = "ROTATION";
           break;
         case Mode::ROTATION:
           current_mode_ = Mode::TRANSLATION;
+          mode_str_ = "TRANSLATION";
           break;
         case Mode::TRANSLATION:
-          current_mode_ = Mode::TRANSLATION_ROTATION;
+          current_mode_ = Mode::BOTH;
+          mode_str_ = "BOTH";
           break;
         case Mode::BOTH:
           current_mode_ = Mode::TRANSLATION_ROTATION;
+          mode_str_ = "TRANSLATION_ROTATION";
           break;
         }
       }
@@ -294,23 +287,7 @@ namespace input_interfaces
                                                                       : Mode::TRANSLATION_ROTATION;
       }
 
-      const char *mode_str = "";
-      switch (current_mode_)
-      {
-      case Mode::TRANSLATION_ROTATION:
-        mode_str = "TRANSLATION_ROTATION";
-        break;
-      case Mode::ROTATION:
-        mode_str = "ROTATION";
-        break;
-      case Mode::TRANSLATION:
-        mode_str = "TRANSLATION";
-        break;
-      case Mode::BOTH:
-        mode_str = "BOTH";
-        break;
-      }
-      RCLCPP_INFO(this->get_logger(), "[spacenav] Mode switched to %s", mode_str);
+      RCLCPP_INFO(this->get_logger(), "Mode switched to %s", mode_str_.c_str());
     }
 
     last_button_1_ = cur_button_1_;
