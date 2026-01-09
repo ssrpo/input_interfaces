@@ -5,6 +5,8 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+option(ENABLE_FRANKA "Build with Franka Emika support" OFF)
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -19,13 +21,14 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(extender_msgs REQUIRED)
 
 ### Franka dependencies
-set(FRANKA_DEPS
-  franka_msgs)
-### Franka specific dependencies
-foreach(dep IN ITEMS ${FRANKA_DEPS})
-  find_package(${dep} REQUIRED)
-endforeach()
-
+if(ENABLE_FRANKA)
+  set(FRANKA_DEPS
+    franka_msgs)
+  ### Franka specific dependencies
+  foreach(dep IN ITEMS ${FRANKA_DEPS})
+    find_package(${dep} REQUIRED)
+  endforeach()
+endif()
 
 # Add the executable for the teleoperation node
 add_executable(joystick_input_node
@@ -46,22 +49,25 @@ target_include_directories(joystick_input_node PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
-# Add the executable for the franka gripper
-add_executable(franka_gripper_node
-  src/franka_gripper.cpp
-)
+if(ENABLE_FRANKA)
+  # Add the executable for the franka gripper
+  add_executable(franka_gripper_node
+    src/franka_gripper.cpp
+  )
 
-# Package dependencies
-ament_target_dependencies(franka_gripper_node
-  rclcpp
-  rclcpp_action
-  ${FRANKA_DEPS}
-)
+  # Package dependencies
+  ament_target_dependencies(franka_gripper_node
+    rclcpp
+    rclcpp_action
+    ${FRANKA_DEPS}
+  )
 
-target_include_directories(franka_gripper_node PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
+  target_include_directories(franka_gripper_node PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+  )
+endif()
+
 
 # Also, ensure you install the include directory if you plan to use these headers elsewhere
 install(DIRECTORY include/
@@ -71,9 +77,15 @@ install(DIRECTORY include/
 # Install the executable
 install(TARGETS
   joystick_input_node
-  franka_gripper_node
   DESTINATION lib/${PROJECT_NAME}
 )
+
+if(ENABLE_FRANKA)
+  install(TARGETS
+    franka_gripper_node
+    DESTINATION lib/${PROJECT_NAME}
+  )
+endif()
 
 # Install launch, config, and rviz directories
 install(DIRECTORY config launch
