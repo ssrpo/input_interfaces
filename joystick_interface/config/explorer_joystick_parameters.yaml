@@ -7,10 +7,10 @@ joystick_input_node:
     angular_scale: 0.200 # Scale factor for angular velocity commands.
 
     # /joy  mapping: indices and signs
-    joy_translation_axes: [0, 1, 2]
-    joy_translation_signs: [1.0, -1.0, 1.0]
+    joy_translation_axes: [1, 0, 2]
+    joy_translation_signs: [-1.0, -1.0, 1.0]
     joy_rotation_axes: [0, 1, 2]
-    joy_rotation_signs: [-1.0, -1.0, -1.0]
+    joy_rotation_signs: [1.0, -1.0, -1.0]
 
     # /spacenav/joy  mapping: indices and signs
     spacenav_translation_axes: [4, 3, 5]
