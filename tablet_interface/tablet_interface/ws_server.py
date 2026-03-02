@@ -112,12 +112,27 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
 
                     if msg_type == "petanque_cfg":
                         cfg = PetanqueConfigMessage.model_validate(payload)
-                        ok = node.set_petanque_total_duration(cfg.total_duration)
+                        ok = True
+                        updated_fields: list[str] = []
+                        if cfg.total_duration is not None:
+                            ok = node.set_petanque_total_duration(cfg.total_duration) and ok
+                            updated_fields.append(f"total_duration={cfg.total_duration:.3f}")
+                        if cfg.angle_between_start_and_finish is not None:
+                            ok = (
+                                node.set_petanque_angle_between_start_and_finish(
+                                    cfg.angle_between_start_and_finish
+                                )
+                                and ok
+                            )
+                            updated_fields.append(
+                                "angle_between_start_and_finish="
+                                f"{cfg.angle_between_start_and_finish:.3f}"
+                            )
                         await _send_event(
                             websocket,
                             code="PETANQUE_CFG_OK" if ok else "PETANQUE_CFG_FAILED",
                             severity="info" if ok else "warning",
-                            message=f"total_duration={cfg.total_duration:.3f}",
+                            message=", ".join(updated_fields),
                         )
                         continue
 

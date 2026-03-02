@@ -43,6 +43,10 @@ class TabletInterfaceNode(Node):
         )
         self.declare_parameter("petanque_param_service", "/petanque_throw/set_parameters")
         self.declare_parameter("petanque_total_duration_param", "total_duration")
+        self.declare_parameter(
+            "petanque_angle_between_start_and_finish_param",
+            "angle_between_start_and_finish",
+        )
         self.declare_parameter("param_call_timeout_sec", 1.5)
 
         self.teleop_cmd_topic = self.get_parameter("teleop_cmd_topic").value
@@ -68,6 +72,9 @@ class TabletInterfaceNode(Node):
         self.petanque_param_service = str(self.get_parameter("petanque_param_service").value)
         self.petanque_total_duration_param = str(
             self.get_parameter("petanque_total_duration_param").value
+        )
+        self.petanque_angle_between_start_and_finish_param = str(
+            self.get_parameter("petanque_angle_between_start_and_finish_param").value
         )
         self.param_call_timeout_sec = float(self.get_parameter("param_call_timeout_sec").value)
         try:
@@ -154,10 +161,12 @@ class TabletInterfaceNode(Node):
             )
         )
         self.get_logger().info(
-            "Petanque bridge: state_machine_topic={0} param_service={1} param_name={2}".format(
+            "Petanque bridge: state_machine_topic={0} param_service={1} "
+            "duration_param={2} angle_param={3}".format(
                 self.state_machine_topic,
                 self.petanque_param_service,
                 self.petanque_total_duration_param,
+                self.petanque_angle_between_start_and_finish_param,
             )
         )
 
@@ -240,6 +249,22 @@ class TabletInterfaceNode(Node):
             )
             return False
 
+        return self._set_petanque_double_parameter(
+            parameter_name=self.petanque_total_duration_param,
+            value=float(total_duration),
+        )
+
+    def set_petanque_angle_between_start_and_finish(self, angle: float) -> bool:
+        return self._set_petanque_double_parameter(
+            parameter_name=self.petanque_angle_between_start_and_finish_param,
+            value=float(angle),
+        )
+
+    def _set_petanque_double_parameter(self, *, parameter_name: str, value: float) -> bool:
+        if not parameter_name:
+            self.get_logger().warning("Petanque parameter name is empty")
+            return False
+
         if not self._petanque_param_client.wait_for_service(
             timeout_sec=self.param_call_timeout_sec
         ):
@@ -249,10 +274,10 @@ class TabletInterfaceNode(Node):
             return False
 
         param = Parameter(
-            name=self.petanque_total_duration_param,
+            name=parameter_name,
             value=ParameterValue(
                 type=ParameterType.PARAMETER_DOUBLE,
-                double_value=float(total_duration),
+                double_value=float(value),
             ),
         )
         req = SetParameters.Request(parameters=[param])
@@ -262,7 +287,7 @@ class TabletInterfaceNode(Node):
         future.add_done_callback(lambda _: done.set())
         if not done.wait(timeout=self.param_call_timeout_sec):
             self.get_logger().warning(
-                f"Timeout while setting parameter {self.petanque_total_duration_param}"
+                f"Timeout while setting parameter {parameter_name}"
             )
             return False
 
@@ -279,12 +304,12 @@ class TabletInterfaceNode(Node):
         if not result.results[0].successful:
             reason = result.results[0].reason or "unknown error"
             self.get_logger().warning(
-                f"Failed to set {self.petanque_total_duration_param}: {reason}"
+                f"Failed to set {parameter_name}: {reason}"
             )
             return False
 
         self.get_logger().info(
-            f"Updated {self.petanque_total_duration_param}={total_duration:.3f}"
+            f"Updated {parameter_name}={value:.3f}"
         )
         return True
 

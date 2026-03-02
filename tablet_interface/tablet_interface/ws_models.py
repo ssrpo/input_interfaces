@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, ValidationError, confloat, conint
+from pydantic import BaseModel, Field, ValidationError, confloat, conint, model_validator
 
 
 class Vector3Model(BaseModel):
@@ -26,7 +26,20 @@ class StateCmdMessage(BaseModel):
 
 class PetanqueConfigMessage(BaseModel):
     type: Literal["petanque_cfg"]
-    total_duration: confloat(gt=0)
+    total_duration: confloat(gt=0) | None = None
+    angle_between_start_and_finish: float | None = None
+
+    @model_validator(mode="after")
+    def _validate_has_payload(self) -> "PetanqueConfigMessage":
+        if (
+            self.total_duration is None
+            and self.angle_between_start_and_finish is None
+        ):
+            raise ValueError(
+                "petanque_cfg requires at least one field: total_duration or "
+                "angle_between_start_and_finish"
+            )
+        return self
 
 
 class UiButtonMessage(BaseModel):
