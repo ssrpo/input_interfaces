@@ -117,6 +117,8 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                         if cfg.total_duration is not None:
                             ok = node.set_petanque_total_duration(cfg.total_duration) and ok
                             updated_fields.append(f"total_duration={cfg.total_duration:.3f}")
+                            if cfg.speed_gain is not None:
+                                updated_fields.append(f"speed_gain={cfg.speed_gain:.3f}")
                         if cfg.angle_between_start_and_finish is not None:
                             ok = (
                                 node.set_petanque_angle_between_start_and_finish(
@@ -127,6 +129,10 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                             updated_fields.append(
                                 "angle_between_start_and_finish="
                                 f"{cfg.angle_between_start_and_finish:.3f}"
+                            )
+                        if updated_fields:
+                            node.get_logger().info(
+                                "Applied petanque_cfg: " + ", ".join(updated_fields)
                             )
                         await _send_event(
                             websocket,
