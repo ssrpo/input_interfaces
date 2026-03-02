@@ -154,6 +154,36 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                                 severity="info" if ok else "warning",
                                 message=f"ui_button payload={button.payload}",
                             )
+                        if button.topic == node.hub_digital_output_topic:
+                            normalized = button.payload.strip().lower()
+                            enable_values = {
+                                "electromagnet_on",
+                                "on",
+                                "1",
+                                "true",
+                                "activate",
+                            }
+                            disable_values = {
+                                "electromagnet_off",
+                                "off",
+                                "0",
+                                "false",
+                                "deactivate",
+                            }
+                            if normalized in enable_values | disable_values:
+                                handled = True
+                                enabled = normalized in enable_values
+                                ok = node.set_electromagnet(enabled)
+                                await _send_event(
+                                    websocket,
+                                    code="HUB_DIGITAL_OUTPUT_OK"
+                                    if ok
+                                    else "HUB_DIGITAL_OUTPUT_FAILED",
+                                    severity="info" if ok else "warning",
+                                    message=(
+                                        f"electromagnet={'on' if enabled else 'off'}"
+                                    ),
+                                )
                         if not handled:
                             await _send_event(
                                 websocket,

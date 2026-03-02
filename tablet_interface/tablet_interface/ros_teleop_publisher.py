@@ -7,7 +7,7 @@ import rclpy
 from rclpy.node import Node
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
-from std_msgs.msg import String
+from std_msgs.msg import Float32MultiArray, String
 
 from extender_msgs.msg import TeleopCommand
 
@@ -41,6 +41,8 @@ class TabletInterfaceNode(Node):
         self.declare_parameter(
             "state_machine_topic", "/petanque_state_machine/change_state"
         )
+        self.declare_parameter("hub_digital_output_topic", "/hub/digital_output")
+        self.declare_parameter("hub_electromagnet_channel", 2.0)
         self.declare_parameter("petanque_param_service", "/petanque_throw/set_parameters")
         self.declare_parameter("petanque_total_duration_param", "total_duration")
         self.declare_parameter(
@@ -69,6 +71,12 @@ class TabletInterfaceNode(Node):
         self.bind_port = int(self.get_parameter("bind_port").value)
         self.ws_path = str(self.get_parameter("ws_path").value)
         self.state_machine_topic = str(self.get_parameter("state_machine_topic").value)
+        self.hub_digital_output_topic = str(
+            self.get_parameter("hub_digital_output_topic").value
+        )
+        self.hub_electromagnet_channel = float(
+            self.get_parameter("hub_electromagnet_channel").value
+        )
         self.petanque_param_service = str(self.get_parameter("petanque_param_service").value)
         self.petanque_total_duration_param = str(
             self.get_parameter("petanque_total_duration_param").value
@@ -112,6 +120,9 @@ class TabletInterfaceNode(Node):
         self._publisher = self.create_publisher(TeleopCommand, self.teleop_cmd_topic, 10)
         self._state_cmd_publisher = self.create_publisher(
             String, self.state_machine_topic, 10
+        )
+        self._hub_digital_output_publisher = self.create_publisher(
+            Float32MultiArray, self.hub_digital_output_topic, 10
         )
         self._petanque_param_client = self.create_client(
             SetParameters, self.petanque_param_service
@@ -167,6 +178,12 @@ class TabletInterfaceNode(Node):
                 self.petanque_param_service,
                 self.petanque_total_duration_param,
                 self.petanque_angle_between_start_and_finish_param,
+            )
+        )
+        self.get_logger().info(
+            "Hub bridge: digital_output_topic={0} electromagnet_channel={1:.1f}".format(
+                self.hub_digital_output_topic,
+                self.hub_electromagnet_channel,
             )
         )
 
@@ -240,6 +257,21 @@ class TabletInterfaceNode(Node):
         msg.data = normalized
         self._state_cmd_publisher.publish(msg)
         self.get_logger().info(f"Published state machine command: {normalized}")
+        return True
+
+    def set_electromagnet(self, enabled: bool) -> bool:
+        msg = Float32MultiArray()
+        msg.data = [
+            float(self.hub_electromagnet_channel),
+            1.0 if enabled else 0.0,
+        ]
+        self._hub_digital_output_publisher.publish(msg)
+        self.get_logger().info(
+            "Published hub digital output: channel={0:.1f} value={1:.1f}".format(
+                self.hub_electromagnet_channel,
+                msg.data[1],
+            )
+        )
         return True
 
     def set_petanque_total_duration(self, total_duration: float) -> bool:

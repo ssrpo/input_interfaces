@@ -21,6 +21,8 @@ tablet_interface_node:
     bind_port: 8765
     ws_path: "/ws/control"
     state_machine_topic: "/petanque_state_machine/change_state"
+    hub_digital_output_topic: "/hub/digital_output"
+    hub_electromagnet_channel: 2.0
     petanque_param_service: "/petanque_throw/set_parameters"
     petanque_total_duration_param: "total_duration"
     petanque_angle_between_start_and_finish_param: "angle_between_start_and_finish"
