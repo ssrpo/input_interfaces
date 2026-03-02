@@ -87,9 +87,4 @@ if(ENABLE_FRANKA)
   )
 endif()
 
-# Install launch, config, and rviz directories
-install(DIRECTORY config launch
-  DESTINATION share/${PROJECT_NAME}
-)
-
 ament_package()
