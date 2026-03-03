@@ -1,4 +1,5 @@
 from setuptools import setup
+from glob import glob
 
 package_name = "tablet_interface"
 
@@ -9,7 +10,7 @@ setup(
     data_files=[
         ("share/ament_index/resource_index/packages", [f"resource/{package_name}"]),
         ("share/{0}".format(package_name), ["package.xml"]),
-        ("share/{0}/config".format(package_name), ["config/tablet_interface_parameters.yaml"]),
+        ("share/{0}/config".format(package_name), glob("config/*.yaml")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

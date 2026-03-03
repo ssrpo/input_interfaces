@@ -47,16 +47,20 @@ def map_and_scale(
     angular_axes: Sequence[int],
     angular_signs: Sequence[float],
     linear_scale: float,
-    z_scale: float,
     angular_scale: float,
+    swap_xy: bool = False,
 ) -> Tuple[Vector3, Vector3]:
     linear = remap(linear_values, linear_axes, linear_signs)
     angular = remap(angular_values, angular_axes, angular_signs)
 
+    if swap_xy:
+        linear = (linear[1], linear[0], linear[2])
+        angular = (angular[1], angular[0], angular[2])
+
     linear_scaled: Vector3 = (
         linear[0] * float(linear_scale),
         linear[1] * float(linear_scale),
-        linear[2] * float(z_scale),
+        linear[2] * float(linear_scale),
     )
     angular_scaled: Vector3 = (
         angular[0] * float(angular_scale),
@@ -64,4 +68,3 @@ def map_and_scale(
         angular[2] * float(angular_scale),
     )
     return linear_scaled, angular_scaled
-

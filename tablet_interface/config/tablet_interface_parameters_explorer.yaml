@@ -1,15 +1,10 @@
 tablet_interface_node:
   ros__parameters:
-    # Default profile uses Explorer values.
-    # For robot-specific files, see:
-    # - tablet_interface_parameters_explorer.yaml
-    # - tablet_interface_parameters_kinova.yaml
     teleop_cmd_topic: "/teleop_cmd"
     publish_rate_hz: 100.0
     linear_scale: 0.035
     angular_scale: 0.2
     swap_xy: false
-    # Tablet mapping is defined directly in UI axes space.
     linear_axes: [0, 1, 2]
     linear_signs: [1.0, 1.0, 1.0]
     angular_axes: [0, 1, 2]

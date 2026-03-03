@@ -4,7 +4,7 @@ SHELL := /bin/bash
 run-node: ## Run tablet_interface node with uv
 	@source /opt/ros/humble/setup.bash && \
 	source /home/susana/workspace/extender_workspace/install/extender_msgs/share/extender_msgs/package.bash && \
-	uv run --with numpy --with pydantic --with fastapi --with uvicorn python -m tablet_interface.main --ros-args --params-file config/tablet_interface_parameters.yaml
+	uv run --with numpy --with pydantic --with fastapi --with uvicorn python -m tablet_interface.main --ros-args --params-file config/tablet_interface_parameters_explorer.yaml
 
 .PHONY: kill-port
 kill-port: ## Kill any process listening on port 8765

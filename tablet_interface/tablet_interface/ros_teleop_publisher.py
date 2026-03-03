@@ -21,13 +21,9 @@ class TabletInterfaceNode(Node):
 
         self.declare_parameter("teleop_cmd_topic", "/teleop_cmd")
         self.declare_parameter("publish_rate_hz", 30.0)
-        self.declare_parameter("watchdog_timeout_ms", 200)
-        self.declare_parameter("max_linear_mps", 0.2)
-        self.declare_parameter("max_linear_z_mps", 0.2)
-        self.declare_parameter("max_angular_rps", 0.5)
         self.declare_parameter("linear_scale", 0.2)
         self.declare_parameter("angular_scale", 0.5)
-        self.declare_parameter("z_scale", 0.2)
+        self.declare_parameter("swap_xy", False)
         self.declare_parameter("linear_axes", [0, 1, 2])
         self.declare_parameter("linear_signs", [1.0, 1.0, 1.0])
         self.declare_parameter("angular_axes", [0, 1, 2])
@@ -53,13 +49,9 @@ class TabletInterfaceNode(Node):
 
         self.teleop_cmd_topic = self.get_parameter("teleop_cmd_topic").value
         self.publish_rate_hz = float(self.get_parameter("publish_rate_hz").value)
-        self.watchdog_timeout_ms = int(self.get_parameter("watchdog_timeout_ms").value)
-        self.max_linear_mps = float(self.get_parameter("max_linear_mps").value)
-        self.max_linear_z_mps = float(self.get_parameter("max_linear_z_mps").value)
-        self.max_angular_rps = float(self.get_parameter("max_angular_rps").value)
         self.linear_scale = float(self.get_parameter("linear_scale").value)
         self.angular_scale = float(self.get_parameter("angular_scale").value)
-        self.z_scale = float(self.get_parameter("z_scale").value)
+        self.swap_xy = bool(self.get_parameter("swap_xy").value)
         linear_axes_param = list(self.get_parameter("linear_axes").value)
         linear_signs_param = list(self.get_parameter("linear_signs").value)
         angular_axes_param = list(self.get_parameter("angular_axes").value)
@@ -134,19 +126,19 @@ class TabletInterfaceNode(Node):
             )
         )
         self.get_logger().info(
-            "Scale params: linear_scale={0:.3f} z_scale={1:.3f} angular_scale={2:.3f}".format(
+            "Scale params: linear_scale={0:.3f} angular_scale={1:.3f}".format(
                 self.linear_scale,
-                self.z_scale,
                 self.angular_scale,
             )
         )
         self.get_logger().info(
             "Mapping params: linear_axes={0} linear_signs={1} "
-            "angular_axes={2} angular_signs={3}".format(
+            "angular_axes={2} angular_signs={3} swap_xy={4}".format(
                 self.linear_axes,
                 self.linear_signs,
                 self.angular_axes,
                 self.angular_signs,
+                str(self.swap_xy).lower(),
             )
         )
         self.get_logger().info(
@@ -186,8 +178,8 @@ class TabletInterfaceNode(Node):
             angular_axes=self.angular_axes,
             angular_signs=self.angular_signs,
             linear_scale=self.linear_scale,
-            z_scale=self.z_scale,
             angular_scale=self.angular_scale,
+            swap_xy=self.swap_xy,
         )
         twist = Twist()
         twist.linear.x = linear[0]
