@@ -6,9 +6,11 @@ from pydantic import BaseModel, Field, ValidationError, confloat, conint, model_
 
 
 class Vector3Model(BaseModel):
-    x: confloat(ge=-1.0, le=1.0)
-    y: confloat(ge=-1.0, le=1.0)
-    z: confloat(ge=-1.0, le=1.0)
+    # UI teleop gains can amplify normalized joystick values above 1.0.
+    # Keep a finite range to reject clearly invalid payloads.
+    x: confloat(ge=-20.0, le=20.0)
+    y: confloat(ge=-20.0, le=20.0)
+    z: confloat(ge=-20.0, le=20.0)
 
 
 class CmdMessage(BaseModel):
@@ -65,7 +67,6 @@ class StateMessage(BaseModel):
     publishing_rate_hz: confloat(strict=True, ge=0)
     current_mode: conint(strict=True, ge=0, le=3)
     gripper_state: Literal["open", "close", "unknown"] | None = None
-    electromagnet_enabled: bool | None = None
 
 
 class EventMessage(BaseModel):

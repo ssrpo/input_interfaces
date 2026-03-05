@@ -52,7 +52,7 @@ def test_cmd_message_valid() -> None:
             "type": "teleop_cmd",
             "seq": 1,
             "mode": 0,
-            "linear": {"x": 1.2, "y": 0.0, "z": 0.0},
+            "linear": {"x": 21.0, "y": 0.0, "z": 0.0},
             "angular": {"x": 0.0, "y": 0.0, "z": 0.0},
         },
     ],
@@ -207,12 +207,10 @@ def test_state_message_valid() -> None:
         "publishing_rate_hz": 30.0,
         "current_mode": 1,
         "gripper_state": "open",
-        "electromagnet_enabled": True,
     }
     msg = StateMessage.model_validate(payload)
     assert msg.current_mode == 1
     assert msg.gripper_state == "open"
-    assert msg.electromagnet_enabled is True
 
 
 @pytest.mark.parametrize(

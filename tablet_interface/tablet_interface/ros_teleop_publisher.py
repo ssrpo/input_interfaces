@@ -41,7 +41,6 @@ class TabletInterfaceNode(Node):
         self.declare_parameter("gripper_open_position", 0.0)
         self.declare_parameter("gripper_close_position", 1.05)
         self.declare_parameter("hub_digital_output_topic", "/hub/digital_output")
-        self.declare_parameter("hub_digital_input_topic", "/hub/digital_input")
         self.declare_parameter("hub_electromagnet_channel", 2.0)
         self.declare_parameter("petanque_param_service", "/petanque_throw/set_parameters")
         self.declare_parameter("petanque_total_duration_param", "total_duration")
@@ -76,9 +75,6 @@ class TabletInterfaceNode(Node):
         )
         self.hub_digital_output_topic = str(
             self.get_parameter("hub_digital_output_topic").value
-        )
-        self.hub_digital_input_topic = str(
-            self.get_parameter("hub_digital_input_topic").value
         )
         self.hub_electromagnet_channel = float(
             self.get_parameter("hub_electromagnet_channel").value
@@ -117,7 +113,6 @@ class TabletInterfaceNode(Node):
         self._connected: bool = False
         self._last_events: List[str] = []
         self._gripper_state: str = "unknown"
-        self._electromagnet_enabled: Optional[bool] = None
 
         self._publisher = self.create_publisher(TeleopCommand, self.teleop_cmd_topic, 10)
         self._state_cmd_publisher = self.create_publisher(
@@ -131,18 +126,6 @@ class TabletInterfaceNode(Node):
         )
         self._gripper_subscription = self.create_subscription(
             Float64MultiArray, self.gripper_topic, self._on_gripper_command, 10
-        )
-        self._hub_digital_output_subscription = self.create_subscription(
-            Float32MultiArray,
-            self.hub_digital_output_topic,
-            self._on_hub_digital_signal,
-            10,
-        )
-        self._hub_digital_input_subscription = self.create_subscription(
-            Float32MultiArray,
-            self.hub_digital_input_topic,
-            self._on_hub_digital_signal,
-            10,
         )
         self._petanque_param_client = self.create_client(
             SetParameters, self.petanque_param_service
@@ -199,10 +182,8 @@ class TabletInterfaceNode(Node):
             )
         )
         self.get_logger().info(
-            "Hub bridge: digital_output_topic={0} digital_input_topic={1} "
-            "electromagnet_channel={2:.1f}".format(
+            "Hub bridge: digital_output_topic={0} electromagnet_channel={1:.1f}".format(
                 self.hub_digital_output_topic,
-                self.hub_digital_input_topic,
                 self.hub_electromagnet_channel,
             )
         )
@@ -307,8 +288,6 @@ class TabletInterfaceNode(Node):
             0.0 if enabled else 1.0,
         ]
         self._hub_digital_output_publisher.publish(msg)
-        with self._lock:
-            self._electromagnet_enabled = bool(enabled)
         self.get_logger().info(
             "Published hub digital output: channel={0:.1f} value={1:.1f}".format(
                 self.hub_electromagnet_channel,
@@ -328,23 +307,6 @@ class TabletInterfaceNode(Node):
         state = "open" if open_distance <= close_distance else "close"
         with self._lock:
             self._gripper_state = state
-
-    def _on_hub_digital_signal(self, msg: Float32MultiArray) -> None:
-        values = list(msg.data)
-        if len(values) < 2:
-            return
-
-        channel = int(round(self.hub_electromagnet_channel))
-        for index in range(0, len(values) - 1, 2):
-            pin = int(round(float(values[index])))
-            if pin != channel:
-                continue
-            value = float(values[index + 1])
-            # Electromagnet wiring is active-low.
-            enabled = value < 0.5
-            with self._lock:
-                self._electromagnet_enabled = enabled
-            return
 
     def set_petanque_total_duration(self, total_duration: float) -> bool:
         if total_duration <= 0.0:
@@ -436,7 +398,6 @@ class TabletInterfaceNode(Node):
                 "publishing_rate_hz": float(self.publish_rate_hz),
                 "current_mode": int(self._current_mode),
                 "gripper_state": self._gripper_state,
-                "electromagnet_enabled": self._electromagnet_enabled,
                 "events": list(self._last_events),
             }
 
