@@ -131,11 +131,9 @@ def test_petanque_cfg_valid() -> None:
     payload = {
         "type": "petanque_cfg",
         "total_duration": 1.25,
-        "speed_gain": 0.88,
     }
     msg = PetanqueConfigMessage.model_validate(payload)
     assert msg.total_duration == pytest.approx(1.25)
-    assert msg.speed_gain == pytest.approx(0.88)
     assert msg.angle_between_start_and_finish is None
 
 
@@ -166,15 +164,6 @@ def test_petanque_cfg_invalid() -> None:
             {
                 "type": "petanque_cfg",
                 "total_duration": 0,
-            }
-        )
-
-    with pytest.raises(ValidationError):
-        PetanqueConfigMessage.model_validate(
-            {
-                "type": "petanque_cfg",
-                "total_duration": 1.0,
-                "speed_gain": 0,
             }
         )
 

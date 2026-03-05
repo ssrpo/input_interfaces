@@ -35,7 +35,6 @@ class PetanqueConfigMessage(BaseModel):
     type: Literal["petanque_cfg"]
     total_duration: confloat(gt=0) | None = None
     angle_between_start_and_finish: float | None = None
-    speed_gain: confloat(gt=0) | None = None
 
     @model_validator(mode="after")
     def _validate_has_payload(self) -> "PetanqueConfigMessage":
