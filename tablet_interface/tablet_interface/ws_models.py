@@ -64,6 +64,8 @@ class StateMessage(BaseModel):
     last_seq: conint(strict=True, ge=0)
     publishing_rate_hz: confloat(strict=True, ge=0)
     current_mode: conint(strict=True, ge=0, le=3)
+    gripper_state: Literal["open", "close", "unknown"] | None = None
+    electromagnet_enabled: bool | None = None
 
 
 class EventMessage(BaseModel):

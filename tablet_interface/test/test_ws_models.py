@@ -206,9 +206,13 @@ def test_state_message_valid() -> None:
         "last_seq": 10,
         "publishing_rate_hz": 30.0,
         "current_mode": 1,
+        "gripper_state": "open",
+        "electromagnet_enabled": True,
     }
     msg = StateMessage.model_validate(payload)
     assert msg.current_mode == 1
+    assert msg.gripper_state == "open"
+    assert msg.electromagnet_enabled is True
 
 
 @pytest.mark.parametrize(
