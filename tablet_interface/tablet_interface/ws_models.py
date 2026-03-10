@@ -23,7 +23,15 @@ class CmdMessage(BaseModel):
 
 class StateCmdMessage(BaseModel):
     type: Literal["state_cmd"]
-    command: Literal["teleop", "activate_throw", "go_to_start", "throw", "pick_up", "stop"]
+    command: Literal[
+        "teleop",
+        "activate_throw",
+        "go_to_start",
+        "throw",
+        "pick_up",
+        "stop",
+        "test_loop",
+    ]
 
 
 class GripperCmdMessage(BaseModel):
@@ -37,7 +45,7 @@ class PetanqueConfigMessage(BaseModel):
     type: Literal["petanque_cfg"]
     total_duration: confloat(gt=0) | None = None
     angle_between_start_and_finish: float | None = None
-    alpha: confloat(ge=0.0, le=20.0) | None = None
+    alpha: confloat(ge=0.0, le=40.0) | None = None
 
     @model_validator(mode="after")
     def _validate_has_payload(self) -> "PetanqueConfigMessage":

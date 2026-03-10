@@ -296,6 +296,7 @@ class TabletInterfaceNode(Node):
             "throw",
             "pick_up",
             "stop",
+            "test_loop",
         }:
             self.get_logger().warning(f"Invalid state machine command: {command}")
             return False
@@ -379,9 +380,9 @@ class TabletInterfaceNode(Node):
         )
 
     def set_petanque_alpha(self, alpha: float) -> bool:
-        if alpha < 0.0 or alpha > 20.0:
+        if alpha < 0.0 or alpha > 40.0:
             self.get_logger().warning(
-                f"Invalid alpha={alpha:.3f}; expected in [0, 20]"
+                f"Invalid alpha={alpha:.3f}; expected in [0, 40]"
             )
             return False
 
