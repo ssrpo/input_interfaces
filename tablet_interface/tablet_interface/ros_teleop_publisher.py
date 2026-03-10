@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import base64
 import binascii
+import json
 import threading
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import rclpy
@@ -16,6 +18,14 @@ from std_msgs.msg import Float32MultiArray, Float64MultiArray, String
 from extender_msgs.msg import TeleopCommand
 
 from tablet_interface.teleop_mapping import map_and_scale, normalize_mapping
+
+MEASURE_DEMO_VECTORS_JSON = json.dumps(
+    {
+        "source": "image_measures_demo",
+        "distances_cm": [27.9],
+    },
+    separators=(",", ":"),
+)
 
 
 class TabletInterfaceNode(Node):
@@ -142,6 +152,10 @@ class TabletInterfaceNode(Node):
         self._measure_result_vectors_json: str | None = None
         self._measure_result_updated_at_ms: int | None = None
         self._measure_result_revision: int = 0
+        self._measure_demo_vectors_json: str = MEASURE_DEMO_VECTORS_JSON
+        self._measure_demo_image_data_url: str | None = (
+            self._load_default_measure_demo_image_data_url()
+        )
 
         self._publisher = self.create_publisher(TeleopCommand, self.teleop_cmd_topic, 10)
         self._state_cmd_publisher = self.create_publisher(
@@ -413,11 +427,21 @@ class TabletInterfaceNode(Node):
 
     def get_measure_result_snapshot(self) -> Dict[str, object]:
         with self._lock:
+            image_data_url = self._measure_result_image_data_url
+            vectors_json = self._measure_result_vectors_json
+            updated_at_ms = self._measure_result_updated_at_ms
+            if (
+                self._is_legacy_fake_measure_vectors(vectors_json)
+                and self._measure_demo_image_data_url is not None
+            ):
+                image_data_url = self._measure_demo_image_data_url
+                vectors_json = self._measure_demo_vectors_json
+                updated_at_ms = None
             return {
                 "revision": int(self._measure_result_revision),
-                "image_data_url": self._measure_result_image_data_url,
-                "vectors_json": self._measure_result_vectors_json,
-                "updated_at_ms": self._measure_result_updated_at_ms,
+                "image_data_url": image_data_url,
+                "vectors_json": vectors_json,
+                "updated_at_ms": updated_at_ms,
             }
 
     def _on_measure_result_image(self, msg: CompressedImage) -> None:
@@ -483,6 +507,39 @@ class TabletInterfaceNode(Node):
             image_format = "jpeg"
         encoded = base64.b64encode(bytes(msg.data)).decode("ascii")
         return f"data:image/{image_format};base64,{encoded}"
+
+    def _load_default_measure_demo_image_data_url(self) -> str | None:
+        repo_root = Path(__file__).resolve().parents[2]
+        demo_image_path = repo_root / "extender_ui" / "src" / "assets" / "image_measures.png"
+        if not demo_image_path.is_file():
+            self.get_logger().warning(
+                f"Measure demo image not found: {demo_image_path}"
+            )
+            return None
+        try:
+            image_bytes = demo_image_path.read_bytes()
+        except OSError as exc:
+            self.get_logger().warning(
+                f"Failed to read measure demo image {demo_image_path}: {exc}"
+            )
+            return None
+        if not image_bytes:
+            self.get_logger().warning(
+                f"Measure demo image is empty: {demo_image_path}"
+            )
+            return None
+        encoded = base64.b64encode(image_bytes).decode("ascii")
+        return f"data:image/png;base64,{encoded}"
+
+    def _is_legacy_fake_measure_vectors(self, vectors_json: str | None) -> bool:
+        if not vectors_json:
+            return False
+        try:
+            parsed = json.loads(vectors_json)
+        except json.JSONDecodeError:
+            return False
+        source = parsed.get("source") if isinstance(parsed, dict) else None
+        return isinstance(source, str) and source.startswith("fake_opencv")
 
     def _set_petanque_double_parameter(self, *, parameter_name: str, value: float) -> bool:
         if not parameter_name:
