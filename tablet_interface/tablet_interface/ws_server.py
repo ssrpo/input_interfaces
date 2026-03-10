@@ -29,6 +29,9 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
             CmdMessage,
             EventMessage,
             GripperCmdMessage,
+            MeasureRefreshMessage,
+            MeasureRequestMessage,
+            MeasureResultMessage,
             PetanqueConfigMessage,
             StateCmdMessage,
             UiButtonMessage,
@@ -71,6 +74,47 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
             }
             await websocket.send_json(message)
 
+    async def _send_measure_result(
+        websocket: WebSocket,
+        *,
+        image_data_url: str | None,
+        vectors_json: str | None,
+        updated_at_ms: int | None,
+    ) -> None:
+        result = MeasureResultMessage(
+            type="measure_result",
+            image_data_url=image_data_url,
+            vectors_json=vectors_json,
+            updated_at_ms=updated_at_ms,
+        )
+        await websocket.send_json(result.model_dump())
+
+    async def _measure_sender(websocket: WebSocket) -> None:
+        last_revision = -1
+        while True:
+            await asyncio.sleep(0.2)
+            snapshot = node.get_measure_result_snapshot()
+            revision = int(snapshot.get("revision") or 0)
+            if revision <= last_revision:
+                continue
+            last_revision = revision
+
+            image_data_url = snapshot.get("image_data_url")
+            vectors_json = snapshot.get("vectors_json")
+            if image_data_url is None and vectors_json is None:
+                continue
+
+            await _send_measure_result(
+                websocket,
+                image_data_url=image_data_url if isinstance(image_data_url, str) else None,
+                vectors_json=vectors_json if isinstance(vectors_json, str) else None,
+                updated_at_ms=(
+                    int(snapshot["updated_at_ms"])
+                    if isinstance(snapshot.get("updated_at_ms"), int)
+                    else None
+                ),
+            )
+
     @app.websocket(ws_path)
     async def ws_endpoint(websocket: WebSocket) -> None:
         await websocket.accept()
@@ -79,6 +123,7 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
         await _send_event(websocket, "WS_CONNECTED", "info", "WS connected")
 
         state_task = asyncio.create_task(_state_sender(websocket))
+        measure_task = asyncio.create_task(_measure_sender(websocket))
         try:
             while True:
                 payload = await websocket.receive_json()
@@ -156,6 +201,52 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                         )
                         continue
 
+                    if msg_type == "measure_request":
+                        request = MeasureRequestMessage.model_validate(payload)
+                        ok = node.publish_measure_request_image(request.image_data_url)
+                        await _send_event(
+                            websocket,
+                            code="MEASURE_REQUEST_OK" if ok else "MEASURE_REQUEST_FAILED",
+                            severity="info" if ok else "warning",
+                            message="measure image request sent" if ok else "invalid measure image",
+                        )
+                        continue
+
+                    if msg_type == "measure_refresh":
+                        MeasureRefreshMessage.model_validate(payload)
+                        snapshot = node.get_measure_result_snapshot()
+                        image_data_url = snapshot.get("image_data_url")
+                        vectors_json = snapshot.get("vectors_json")
+                        if image_data_url is None and vectors_json is None:
+                            await _send_event(
+                                websocket,
+                                code="MEASURE_REFRESH_EMPTY",
+                                severity="warning",
+                                message="no cached measure result",
+                            )
+                            continue
+                        await _send_measure_result(
+                            websocket,
+                            image_data_url=image_data_url
+                            if isinstance(image_data_url, str)
+                            else None,
+                            vectors_json=vectors_json
+                            if isinstance(vectors_json, str)
+                            else None,
+                            updated_at_ms=(
+                                int(snapshot["updated_at_ms"])
+                                if isinstance(snapshot.get("updated_at_ms"), int)
+                                else None
+                            ),
+                        )
+                        await _send_event(
+                            websocket,
+                            code="MEASURE_REFRESH_OK",
+                            severity="info",
+                            message="sent cached measure result",
+                        )
+                        continue
+
                     if msg_type == "ui_button":
                         button = UiButtonMessage.model_validate(payload)
                         handled = False
@@ -225,6 +316,7 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
             pass
         finally:
             state_task.cancel()
+            measure_task.cancel()
             node.set_connected(False)
             node.get_logger().info("WS client disconnected")
             if WebSocketState is not None and websocket.client_state == WebSocketState.CONNECTED:

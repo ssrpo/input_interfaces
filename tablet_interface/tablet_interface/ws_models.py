@@ -60,6 +60,28 @@ class UiButtonMessage(BaseModel):
     widget_id: str | None = None
 
 
+class MeasureRequestMessage(BaseModel):
+    type: Literal["measure_request"]
+    image_data_url: str = Field(min_length=32)
+
+    @model_validator(mode="after")
+    def _validate_image_data_url(self) -> "MeasureRequestMessage":
+        if not self.image_data_url.startswith("data:image/"):
+            raise ValueError("measure_request image_data_url must start with data:image/")
+        return self
+
+
+class MeasureRefreshMessage(BaseModel):
+    type: Literal["measure_refresh"]
+
+
+class MeasureResultMessage(BaseModel):
+    type: Literal["measure_result"]
+    image_data_url: str | None = None
+    vectors_json: str | None = None
+    updated_at_ms: conint(strict=True, ge=0) | None = None
+
+
 class StateMessage(BaseModel):
     type: Literal["state"]
     connected: bool
@@ -84,6 +106,9 @@ __all__ = [
     "GripperCmdMessage",
     "PetanqueConfigMessage",
     "UiButtonMessage",
+    "MeasureRequestMessage",
+    "MeasureRefreshMessage",
+    "MeasureResultMessage",
     "StateMessage",
     "EventMessage",
     "Vector3Model",
