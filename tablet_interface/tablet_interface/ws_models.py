@@ -37,16 +37,18 @@ class PetanqueConfigMessage(BaseModel):
     type: Literal["petanque_cfg"]
     total_duration: confloat(gt=0) | None = None
     angle_between_start_and_finish: float | None = None
+    alpha: confloat(ge=0.0, le=20.0) | None = None
 
     @model_validator(mode="after")
     def _validate_has_payload(self) -> "PetanqueConfigMessage":
         if (
             self.total_duration is None
             and self.angle_between_start_and_finish is None
+            and self.alpha is None
         ):
             raise ValueError(
                 "petanque_cfg requires at least one field: total_duration or "
-                "angle_between_start_and_finish"
+                "angle_between_start_and_finish or alpha"
             )
         return self
 
