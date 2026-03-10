@@ -61,6 +61,39 @@ Supported `petanque_cfg` fields:
 Each field updates the matching `/petanque_throw` parameter through
 `/petanque_throw/set_parameters`.
 
+For measure workflow:
+
+```json
+{
+  "type": "measure_request",
+  "image_data_url": "data:image/jpeg;base64,..."
+}
+```
+
+Publishes image to ROS topic:
+- `/petanque/measure/request_image/compressed` (`sensor_msgs/CompressedImage`)
+
+Frontend can request cached result:
+
+```json
+{ "type": "measure_refresh" }
+```
+
+Backend returns:
+
+```json
+{
+  "type": "measure_result",
+  "image_data_url": "data:image/jpeg;base64,...",
+  "vectors_json": "{\"distances\":[0.6]}",
+  "updated_at_ms": 123456
+}
+```
+
+Backend listens for OpenCV outputs on:
+- `/petanque/measure/result_image/compressed` (`sensor_msgs/CompressedImage`)
+- `/petanque/measure/result_vectors` (`std_msgs/String`, JSON payload expected)
+
 `ui_button` messages are also accepted for compatibility. If `topic` matches
 `/petanque_state_machine/change_state`, backend forwards `payload` to the same bridge.
 
