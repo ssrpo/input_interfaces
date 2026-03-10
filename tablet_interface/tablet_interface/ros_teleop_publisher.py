@@ -38,8 +38,8 @@ class TabletInterfaceNode(Node):
             "state_machine_topic", "/petanque_state_machine/change_state"
         )
         self.declare_parameter("gripper_topic", "/gripper_controller/commands")
-        self.declare_parameter("gripper_open_position", 0.0)
-        self.declare_parameter("gripper_close_position", 1.05)
+        self.declare_parameter("gripper_open_position", 0.2)
+        self.declare_parameter("gripper_close_position", 1.1)
         self.declare_parameter("hub_digital_output_topic", "/hub/digital_output")
         self.declare_parameter("hub_electromagnet_channel", 2.0)
         self.declare_parameter("petanque_param_service", "/petanque_throw/set_parameters")

@@ -22,8 +22,8 @@ tablet_interface_node:
     ws_path: "/ws/control"
     state_machine_topic: "/petanque_state_machine/change_state"
     gripper_topic: "/gripper_controller/commands"
-    gripper_open_position: 0.0
-    gripper_close_position: 1.05
+    gripper_open_position: 0.2
+    gripper_close_position: 1.1
     hub_digital_output_topic: "/hub/digital_output"
     hub_electromagnet_channel: 2.0
     petanque_param_service: "/petanque_throw/set_parameters"
