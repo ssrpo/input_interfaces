@@ -53,7 +53,13 @@ These are published as `std_msgs/String` on `/petanque_state_machine/change_stat
 { "type": "petanque_cfg", "total_duration": 1.0 }
 ```
 
-This updates `/petanque_throw` parameter `total_duration` through `/petanque_throw/set_parameters`.
+Supported `petanque_cfg` fields:
+- `total_duration` (`> 0`)
+- `angle_between_start_and_finish`
+- `alpha` (`0..20`)
+
+Each field updates the matching `/petanque_throw` parameter through
+`/petanque_throw/set_parameters`.
 
 `ui_button` messages are also accepted for compatibility. If `topic` matches
 `/petanque_state_machine/change_state`, backend forwards `payload` to the same bridge.

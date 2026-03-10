@@ -141,6 +141,9 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                                 "angle_between_start_and_finish="
                                 f"{cfg.angle_between_start_and_finish:.3f}"
                             )
+                        if cfg.alpha is not None:
+                            ok = node.set_petanque_alpha(cfg.alpha) and ok
+                            updated_fields.append(f"alpha={cfg.alpha:.3f}")
                         if updated_fields:
                             node.get_logger().info(
                                 "Applied petanque_cfg: " + ", ".join(updated_fields)

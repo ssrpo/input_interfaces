@@ -24,4 +24,5 @@ tablet_interface_node:
     petanque_param_service: "/petanque_throw/set_parameters"
     petanque_total_duration_param: "total_duration"
     petanque_angle_between_start_and_finish_param: "angle_between_start_and_finish"
+    petanque_alpha_param: "alpha"
     param_call_timeout_sec: 1.5

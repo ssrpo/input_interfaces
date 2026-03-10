@@ -48,6 +48,7 @@ class TabletInterfaceNode(Node):
             "petanque_angle_between_start_and_finish_param",
             "angle_between_start_and_finish",
         )
+        self.declare_parameter("petanque_alpha_param", "alpha")
         self.declare_parameter("param_call_timeout_sec", 1.5)
 
         self.teleop_cmd_topic = self.get_parameter("teleop_cmd_topic").value
@@ -85,6 +86,9 @@ class TabletInterfaceNode(Node):
         )
         self.petanque_angle_between_start_and_finish_param = str(
             self.get_parameter("petanque_angle_between_start_and_finish_param").value
+        )
+        self.petanque_alpha_param = str(
+            self.get_parameter("petanque_alpha_param").value
         )
         self.param_call_timeout_sec = float(self.get_parameter("param_call_timeout_sec").value)
         try:
@@ -167,11 +171,12 @@ class TabletInterfaceNode(Node):
         )
         self.get_logger().info(
             "Petanque bridge: state_machine_topic={0} param_service={1} "
-            "duration_param={2} angle_param={3}".format(
+            "duration_param={2} angle_param={3} alpha_param={4}".format(
                 self.state_machine_topic,
                 self.petanque_param_service,
                 self.petanque_total_duration_param,
                 self.petanque_angle_between_start_and_finish_param,
+                self.petanque_alpha_param,
             )
         )
         self.get_logger().info(
@@ -324,6 +329,18 @@ class TabletInterfaceNode(Node):
         return self._set_petanque_double_parameter(
             parameter_name=self.petanque_angle_between_start_and_finish_param,
             value=float(angle),
+        )
+
+    def set_petanque_alpha(self, alpha: float) -> bool:
+        if alpha < 0.0 or alpha > 20.0:
+            self.get_logger().warning(
+                f"Invalid alpha={alpha:.3f}; expected in [0, 20]"
+            )
+            return False
+
+        return self._set_petanque_double_parameter(
+            parameter_name=self.petanque_alpha_param,
+            value=float(alpha),
         )
 
     def _set_petanque_double_parameter(self, *, parameter_name: str, value: float) -> bool:

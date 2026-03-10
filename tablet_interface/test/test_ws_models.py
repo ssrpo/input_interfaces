@@ -135,6 +135,7 @@ def test_petanque_cfg_valid() -> None:
     msg = PetanqueConfigMessage.model_validate(payload)
     assert msg.total_duration == pytest.approx(1.25)
     assert msg.angle_between_start_and_finish is None
+    assert msg.alpha is None
 
 
 def test_petanque_cfg_angle_valid() -> None:
@@ -145,6 +146,18 @@ def test_petanque_cfg_angle_valid() -> None:
     msg = PetanqueConfigMessage.model_validate(payload)
     assert msg.total_duration is None
     assert msg.angle_between_start_and_finish == pytest.approx(0.7)
+    assert msg.alpha is None
+
+
+def test_petanque_cfg_alpha_valid() -> None:
+    payload = {
+        "type": "petanque_cfg",
+        "alpha": 20.0,
+    }
+    msg = PetanqueConfigMessage.model_validate(payload)
+    assert msg.total_duration is None
+    assert msg.angle_between_start_and_finish is None
+    assert msg.alpha == pytest.approx(20.0)
 
 
 def test_petanque_cfg_both_fields_valid() -> None:
@@ -152,10 +165,12 @@ def test_petanque_cfg_both_fields_valid() -> None:
         "type": "petanque_cfg",
         "total_duration": 1.2,
         "angle_between_start_and_finish": 0.4,
+        "alpha": 3.5,
     }
     msg = PetanqueConfigMessage.model_validate(payload)
     assert msg.total_duration == pytest.approx(1.2)
     assert msg.angle_between_start_and_finish == pytest.approx(0.4)
+    assert msg.alpha == pytest.approx(3.5)
 
 
 def test_petanque_cfg_invalid() -> None:
@@ -164,6 +179,14 @@ def test_petanque_cfg_invalid() -> None:
             {
                 "type": "petanque_cfg",
                 "total_duration": 0,
+            }
+        )
+
+    with pytest.raises(ValidationError):
+        PetanqueConfigMessage.model_validate(
+            {
+                "type": "petanque_cfg",
+                "alpha": 20.5,
             }
         )
 
