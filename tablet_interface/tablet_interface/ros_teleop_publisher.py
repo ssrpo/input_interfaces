@@ -148,6 +148,7 @@ class TabletInterfaceNode(Node):
         self._connected: bool = False
         self._last_events: List[str] = []
         self._gripper_state: str = "unknown"
+        self._visual_servo_prepared: bool = False
         self._measure_result_image_data_url: str | None = None
         self._measure_result_vectors_json: str | None = None
         self._measure_result_updated_at_ms: int | None = None
@@ -318,7 +319,44 @@ class TabletInterfaceNode(Node):
         msg = String()
         msg.data = normalized
         self._state_cmd_publisher.publish(msg)
+        if normalized == "stop":
+            self._visual_servo_prepared = False
         self.get_logger().info(f"Published state machine command: {normalized}")
+        return True
+
+    def _set_latest_cmd_zero(self) -> None:
+        with self._lock:
+            mode = int(self._current_mode)
+            next_seq = int(self._last_seq) + 1
+        self.update_latest_cmd(twist=Twist(), mode=mode, seq=next_seq)
+
+    def prepare_visual_servo_pickup(self) -> bool:
+        ok = self.send_state_command("pick_up")
+        if ok:
+            self._visual_servo_prepared = True
+            self.get_logger().info("Visual servo pickup prepared")
+        return ok
+
+    def pickup_now_from_visual_servo(
+        self, *, close_gripper: bool = True, enable_magnet: bool = False
+    ) -> bool:
+        if not self._visual_servo_prepared:
+            self.get_logger().warning(
+                "visual_servo pickup_now requested without prepare; proceeding anyway"
+            )
+        self._set_latest_cmd_zero()
+        ok = True
+        if close_gripper:
+            ok = self.set_gripper("close") and ok
+        if enable_magnet:
+            ok = self.set_electromagnet(True) and ok
+        self._visual_servo_prepared = False
+        return ok
+
+    def abort_visual_servo_pickup(self) -> bool:
+        self._set_latest_cmd_zero()
+        self._visual_servo_prepared = False
+        self.get_logger().info("Visual servo pickup aborted")
         return True
 
     def set_gripper(self, action: str) -> bool:

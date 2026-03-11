@@ -12,6 +12,7 @@ from tablet_interface.ws_models import (
     StateCmdMessage,
     StateMessage,
     UiButtonMessage,
+    VisualServoCmdMessage,
 )
 
 
@@ -89,6 +90,28 @@ def test_state_cmd_invalid() -> None:
             {
                 "type": "state_cmd",
                 "command": "go_to_end",
+            }
+        )
+
+
+def test_visual_servo_cmd_valid() -> None:
+    payload = {
+        "type": "visual_servo_cmd",
+        "command": "pickup_now",
+        "close_gripper": True,
+        "enable_magnet": False,
+    }
+    msg = VisualServoCmdMessage.model_validate(payload)
+    assert msg.command == "pickup_now"
+    assert msg.close_gripper is True
+
+
+def test_visual_servo_cmd_invalid() -> None:
+    with pytest.raises(ValidationError):
+        VisualServoCmdMessage.model_validate(
+            {
+                "type": "visual_servo_cmd",
+                "command": "start",
             }
         )
 

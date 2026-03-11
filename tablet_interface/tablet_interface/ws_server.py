@@ -35,6 +35,7 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
             PetanqueConfigMessage,
             StateCmdMessage,
             UiButtonMessage,
+            VisualServoCmdMessage,
         )
     except Exception as exc:  # pragma: no cover
         node.get_logger().error(
@@ -154,6 +155,29 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                             code="STATE_CMD_OK" if ok else "STATE_CMD_FAILED",
                             severity="info" if ok else "warning",
                             message=f"state_cmd={state_cmd.command}",
+                        )
+                        continue
+
+                    if msg_type == "visual_servo_cmd":
+                        servo_cmd = VisualServoCmdMessage.model_validate(payload)
+                        if servo_cmd.command == "prepare_pickup":
+                            ok = node.prepare_visual_servo_pickup()
+                        elif servo_cmd.command == "pickup_now":
+                            ok = node.pickup_now_from_visual_servo(
+                                close_gripper=bool(servo_cmd.close_gripper),
+                                enable_magnet=bool(servo_cmd.enable_magnet),
+                            )
+                        else:
+                            ok = node.abort_visual_servo_pickup()
+                        await _send_event(
+                            websocket,
+                            code=(
+                                "VISUAL_SERVO_CMD_OK"
+                                if ok
+                                else "VISUAL_SERVO_CMD_FAILED"
+                            ),
+                            severity="info" if ok else "warning",
+                            message=f"visual_servo_cmd={servo_cmd.command}",
                         )
                         continue
 

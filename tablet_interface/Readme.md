@@ -46,8 +46,26 @@ For pétanque integration, backend also supports:
 { "type": "state_cmd", "command": "teleop" }
 ```
 
-Allowed `command` values: `teleop`, `activate_throw`, `go_to_start`, `throw`, `pick_up`, `stop`.
+Allowed `command` values: `teleop`, `activate_throw`, `go_to_start`, `throw`, `pick_up`, `stop`, `test_loop`.
 These are published as `std_msgs/String` on `/petanque_state_machine/change_state`.
+In the updated pétanque state machine, `pick_up` now keeps manual behavior but skips
+`go_to_start` when teleop is already active.
+
+For visual-servoing orchestration, backend also supports:
+
+```json
+{
+  "type": "visual_servo_cmd",
+  "command": "pickup_now",
+  "close_gripper": true,
+  "enable_magnet": false
+}
+```
+
+Supported visual-servo commands:
+- `prepare_pickup`: sends `pick_up` to state machine (prepare teleop/manual pickup flow)
+- `pickup_now`: zeros teleop command, then optionally closes gripper and/or enables magnet
+- `abort`: zeros teleop command and clears visual-servo pickup preparation flag
 
 ```json
 { "type": "petanque_cfg", "total_duration": 1.0 }
@@ -56,7 +74,7 @@ These are published as `std_msgs/String` on `/petanque_state_machine/change_stat
 Supported `petanque_cfg` fields:
 - `total_duration` (`> 0`)
 - `angle_between_start_and_finish`
-- `alpha` (`0..20`)
+- `alpha` (`0..40`)
 
 Each field updates the matching `/petanque_throw` parameter through
 `/petanque_throw/set_parameters`.

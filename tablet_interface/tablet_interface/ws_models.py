@@ -34,6 +34,13 @@ class StateCmdMessage(BaseModel):
     ]
 
 
+class VisualServoCmdMessage(BaseModel):
+    type: Literal["visual_servo_cmd"]
+    command: Literal["prepare_pickup", "pickup_now", "abort"]
+    close_gripper: bool = True
+    enable_magnet: bool = False
+
+
 class GripperCmdMessage(BaseModel):
     type: Literal["gripper_cmd"]
     action: Literal["open", "close"]
@@ -111,6 +118,7 @@ class EventMessage(BaseModel):
 __all__ = [
     "CmdMessage",
     "StateCmdMessage",
+    "VisualServoCmdMessage",
     "GripperCmdMessage",
     "PetanqueConfigMessage",
     "UiButtonMessage",
