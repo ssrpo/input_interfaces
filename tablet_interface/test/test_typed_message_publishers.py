@@ -5,6 +5,7 @@ import pytest
 from tablet_interface.typed_message_publishers import (
     TypedMessagePublisherCache,
     build_typed_message,
+    parse_message_payload_text,
 )
 
 
@@ -77,6 +78,22 @@ def test_build_typed_message_supports_custom_field_mappings() -> None:
     assert message.z == pytest.approx(-0.2)
 
 
+def test_parse_message_payload_text_rejects_empty_payloads() -> None:
+    with pytest.raises(ValueError, match="Typed message payload is empty"):
+        parse_message_payload_text("   ")
+
+
+def test_build_typed_message_rejects_scalar_payload_for_multi_field_messages() -> None:
+    with pytest.raises(
+        ValueError,
+        match="Typed message payload must be a mapping for multi-field ROS messages",
+    ):
+        build_typed_message(
+            "geometry_msgs/msg/Vector3",
+            "0.5",
+        )
+
+
 def test_typed_message_publisher_cache_reuses_publishers_per_topic_and_type() -> None:
     node = FakeNode()
     cache = TypedMessagePublisherCache(node)
@@ -105,3 +122,11 @@ def test_typed_message_publisher_cache_rejects_invalid_payload() -> None:
             "std_msgs/msg/Int32MultiArray",
             "{data: [4, }",
         )
+
+
+def test_typed_message_publisher_cache_rejects_empty_topic() -> None:
+    node = FakeNode()
+    cache = TypedMessagePublisherCache(node)
+
+    with pytest.raises(ValueError, match="Typed message publisher topic is empty"):
+        cache.ensure_publisher("   ", "std_msgs/msg/String")
