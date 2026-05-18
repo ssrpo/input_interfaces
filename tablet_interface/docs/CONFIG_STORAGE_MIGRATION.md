@@ -19,6 +19,8 @@ The backend role is to become the durable storage boundary used by the UI while 
   - SQLite storage layer exists and is tested
   - payload-level import/export helpers exist and preserve structured widget payloads
   - a FastAPI router exposes additive storage snapshot endpoints
+  - the storage API now follows a more idiomatic FastAPI structure with router installation and request-time dependency resolution
+  - the storage API is covered by real HTTP integration tests over uvicorn
   - the WebSocket server can include that router without changing the current UI behavior
 - not switched yet:
   - the storage API is not the frontend default path
@@ -95,7 +97,7 @@ The backend role is to become the durable storage boundary used by the UI while 
 - add per-domain CRUD endpoints or a coordinated snapshot service layer for the UI repositories
 - wire the snapshot API behind a dedicated frontend repository implementation
 - seed an empty database from existing JSON assets without deleting or rewriting those assets
-- add full HTTP client tests once `httpx` is available in the workspace test environment
+- decide explicit semantics for deletions before the database becomes the default source of truth
 
 ## Safety Checks
 

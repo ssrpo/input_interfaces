@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 try:
     import uvicorn
@@ -15,15 +16,17 @@ except Exception:  # pragma: no cover
     WebSocketState = None  # type: ignore
     ValidationError = Exception  # type: ignore
 
-from tablet_interface.ros_teleop_publisher import TabletInterfaceNode
 from tablet_interface.config_storage import SQLiteConfigStorage
-from tablet_interface.storage_api import create_storage_router
+from tablet_interface.storage_api import install_storage_api
 from tablet_interface.ws_handlers import (
     build_state_message,
     handle_ws_payload,
     send_event,
     send_measure_result,
 )
+
+if TYPE_CHECKING:
+    from tablet_interface.ros_teleop_publisher import TabletInterfaceNode
 
 
 def create_app(node: TabletInterfaceNode) -> FastAPI:
@@ -33,7 +36,7 @@ def create_app(node: TabletInterfaceNode) -> FastAPI:
     app = FastAPI()
     storage = _create_config_storage(node)
     if storage is not None:
-        app.include_router(create_storage_router(storage))
+        install_storage_api(app, storage)
 
     host = node.get_parameter("bind_host").value
     port = int(node.get_parameter("bind_port").value)
