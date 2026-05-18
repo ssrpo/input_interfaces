@@ -39,4 +39,5 @@ tablet_interface_node:
     sandbox_toggle_output_topic: "/sandbox/digital_output"
     sandbox_toggle_output_message_type: "std_msgs/msg/Float64"
     sandbox_toggle_output_mode: "numeric"
+    config_storage_db_path: ""
     param_call_timeout_sec: 1.5

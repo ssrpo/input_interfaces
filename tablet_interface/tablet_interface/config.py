@@ -41,6 +41,7 @@ class TabletInterfaceConfig:
     sandbox_toggle_output_topic: str
     sandbox_toggle_output_message_type: str
     sandbox_toggle_output_mode: str
+    config_storage_db_path: str
     param_call_timeout_sec: float
 
 
@@ -79,6 +80,7 @@ PARAMETER_DEFAULTS = {
     "sandbox_toggle_output_topic": "/sandbox/digital_output",
     "sandbox_toggle_output_message_type": "std_msgs/msg/Float64",
     "sandbox_toggle_output_mode": "numeric",
+    "config_storage_db_path": "",
     "param_call_timeout_sec": 1.5,
 }
 
@@ -145,6 +147,9 @@ def load_tablet_interface_config(node: Node) -> TabletInterfaceConfig:
         ),
         sandbox_toggle_output_mode=str(
             node.get_parameter("sandbox_toggle_output_mode").value
+        ),
+        config_storage_db_path=str(
+            node.get_parameter("config_storage_db_path").value
         ),
         param_call_timeout_sec=float(
             node.get_parameter("param_call_timeout_sec").value

@@ -82,6 +82,7 @@ class TabletInterfaceNode(Node):
             config.sandbox_toggle_output_message_type
         )
         self.sandbox_toggle_output_mode = config.sandbox_toggle_output_mode
+        self.config_storage_db_path = config.config_storage_db_path
         self.param_call_timeout_sec = config.param_call_timeout_sec
         try:
             self.linear_axes, self.linear_signs = normalize_mapping(
@@ -288,6 +289,11 @@ class TabletInterfaceNode(Node):
                 self.sandbox_joint_pose_topic or "disabled",
                 self.sandbox_toggle_output_topic or "disabled",
                 self._resolve_sandbox_toggle_output_message_type() or "disabled",
+            )
+        )
+        self.get_logger().info(
+            "Config storage: db_path={0}".format(
+                self.config_storage_db_path or "disabled",
             )
         )
 

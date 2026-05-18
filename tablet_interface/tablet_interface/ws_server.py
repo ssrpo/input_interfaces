@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 try:
     import uvicorn
@@ -15,6 +16,8 @@ except Exception:  # pragma: no cover
     ValidationError = Exception  # type: ignore
 
 from tablet_interface.ros_teleop_publisher import TabletInterfaceNode
+from tablet_interface.config_storage import SQLiteConfigStorage
+from tablet_interface.storage_api import create_storage_router
 from tablet_interface.ws_handlers import (
     build_state_message,
     handle_ws_payload,
@@ -23,26 +26,18 @@ from tablet_interface.ws_handlers import (
 )
 
 
-def run_uvicorn_server(node: TabletInterfaceNode) -> None:
-    if uvicorn is None or FastAPI is None:
-        node.get_logger().error(
-            "fastapi/uvicorn not available. WebSocket server cannot start."
-        )
-        return
+def create_app(node: TabletInterfaceNode) -> FastAPI:
+    if FastAPI is None or WebSocket is None:
+        raise RuntimeError("fastapi is not available")
 
-    try:
-        from tablet_interface import ws_models as _ws_models  # noqa: F401
-    except Exception as exc:  # pragma: no cover
-        node.get_logger().error(
-            f"pydantic not available. WebSocket server cannot start: {exc}"
-        )
-        return
+    app = FastAPI()
+    storage = _create_config_storage(node)
+    if storage is not None:
+        app.include_router(create_storage_router(storage))
 
     host = node.get_parameter("bind_host").value
     port = int(node.get_parameter("bind_port").value)
     ws_path = node.get_parameter("ws_path").value
-
-    app = FastAPI()
 
     async def _state_sender(websocket: WebSocket) -> None:
         interval = 1.0 / max(node.state_publish_hz, 1e-3)
@@ -118,4 +113,40 @@ def run_uvicorn_server(node: TabletInterfaceNode) -> None:
                     pass
 
     node.get_logger().info(f"WebSocket listening on ws://{host}:{port}{ws_path}")
+    return app
+
+
+def _create_config_storage(node: TabletInterfaceNode) -> SQLiteConfigStorage | None:
+    raw_db_path = getattr(node, "config_storage_db_path", "") or str(
+        node.get_parameter("config_storage_db_path").value
+    )
+    db_path = raw_db_path.strip()
+    if not db_path:
+        return None
+
+    resolved_db_path = Path(db_path).expanduser()
+    storage = SQLiteConfigStorage(resolved_db_path)
+    storage.initialize()
+    node.get_logger().info(f"Config storage API enabled at {resolved_db_path}")
+    return storage
+
+
+def run_uvicorn_server(node: TabletInterfaceNode) -> None:
+    if uvicorn is None or FastAPI is None:
+        node.get_logger().error(
+            "fastapi/uvicorn not available. WebSocket server cannot start."
+        )
+        return
+
+    try:
+        from tablet_interface import ws_models as _ws_models  # noqa: F401
+    except Exception as exc:  # pragma: no cover
+        node.get_logger().error(
+            f"pydantic not available. WebSocket server cannot start: {exc}"
+        )
+        return
+
+    host = node.get_parameter("bind_host").value
+    port = int(node.get_parameter("bind_port").value)
+    app = create_app(node)
     uvicorn.run(app, host=host, port=port, log_level="info")
