@@ -25,8 +25,13 @@ from tablet_interface.measure_codec import load_demo_measure_image_data_url
 from tablet_interface.petanque_bridge import PetanqueBridge
 from tablet_interface.runtime_state import TabletRuntimeState
 from tablet_interface.sandbox_bridge import SandboxBridge
-from tablet_interface.teleop_mapping import map_and_scale, normalize_mapping
+from tablet_interface.teleop_command_service import (
+    TeleopCommandService,
+    TeleopCommandSettings,
+)
+from tablet_interface.teleop_mapping import normalize_mapping
 from tablet_interface.typed_message_publishers import TypedMessagePublisherCache
+from tablet_interface.ui_topic_publisher import UiTopicPublisherService
 
 MEASURE_DEMO_VECTORS_JSON = json.dumps(
     {
@@ -118,7 +123,30 @@ class TabletInterfaceNode(Node):
         )
         self._generic_publishers = GenericPublisherCache(self)
         self._typed_publishers = TypedMessagePublisherCache(self)
-        self._ensure_sandbox_toggle_output_publisher()
+        self._teleop_commands = TeleopCommandService(
+            TeleopCommandSettings(
+                linear_axes=self.linear_axes,
+                linear_signs=self.linear_signs,
+                angular_axes=self.angular_axes,
+                angular_signs=self.angular_signs,
+                linear_scale=self.linear_scale,
+                angular_scale=self.angular_scale,
+                swap_xy=self.swap_xy,
+                default_mode=self.default_mode,
+                accept_mode_from_client=self.accept_mode_from_client,
+            )
+        )
+        self._ui_topic_publisher = UiTopicPublisherService(
+            logger=self.get_logger(),
+            generic_publishers=self._generic_publishers,
+            typed_publishers=self._typed_publishers,
+            sandbox_toggle_output_topic=self.sandbox_toggle_output_topic,
+            sandbox_toggle_output_message_type=(
+                self.sandbox_toggle_output_message_type
+            ),
+            sandbox_toggle_output_mode=self.sandbox_toggle_output_mode,
+        )
+        self._ui_topic_publisher.ensure_sandbox_toggle_output_publisher()
 
         self._publisher = self.create_publisher(TeleopCommand, self.teleop_cmd_topic, 10)
         self._state_cmd_publisher = self.create_publisher(
@@ -288,7 +316,8 @@ class TabletInterfaceNode(Node):
                 self.sandbox_velocity_command_topic or "disabled",
                 self.sandbox_joint_pose_topic or "disabled",
                 self.sandbox_toggle_output_topic or "disabled",
-                self._resolve_sandbox_toggle_output_message_type() or "disabled",
+                self._ui_topic_publisher.resolve_sandbox_toggle_output_message_type()
+                or "disabled",
             )
         )
         self.get_logger().info(
@@ -303,25 +332,10 @@ class TabletInterfaceNode(Node):
         linear_values: Tuple[float, float, float],
         angular_values: Tuple[float, float, float],
     ) -> Twist:
-        linear, angular = map_and_scale(
+        return self._teleop_commands.map_and_scale_cmd(
             linear_values=linear_values,
             angular_values=angular_values,
-            linear_axes=self.linear_axes,
-            linear_signs=self.linear_signs,
-            angular_axes=self.angular_axes,
-            angular_signs=self.angular_signs,
-            linear_scale=self.linear_scale,
-            angular_scale=self.angular_scale,
-            swap_xy=self.swap_xy,
         )
-        twist = Twist()
-        twist.linear.x = linear[0]
-        twist.linear.y = linear[1]
-        twist.linear.z = linear[2]
-        twist.angular.x = angular[0]
-        twist.angular.y = angular[1]
-        twist.angular.z = angular[2]
-        return twist
 
     def update_latest_cmd(
         self,
@@ -335,11 +349,10 @@ class TabletInterfaceNode(Node):
         if received_ms is None:
             received_ms = now_ms
 
-        if not self.accept_mode_from_client:
-            mode = self.default_mode
+        mode = self._teleop_commands.resolve_mode(mode)
 
         with self._cmd_lock:
-            self._latest_twist = self._copy_twist(twist)
+            self._latest_twist = self._teleop_commands.copy_twist(twist)
         self._runtime_state.update_command_meta(
             mode=mode,
             seq=seq,
@@ -356,28 +369,10 @@ class TabletInterfaceNode(Node):
         return self._actuator_bridge.set_electromagnet(enabled)
 
     def publish_ui_button(self, topic: str, payload: str) -> bool:
-        ok = self._generic_publishers.publish_string(topic, payload)
-        if not ok:
-            return False
-        self.get_logger().info(
-            "Published generic UI button: topic={0} payload={1}".format(
-                topic.strip(),
-                payload,
-            )
-        )
-        return True
+        return self._ui_topic_publisher.publish_button(topic, payload)
 
     def publish_ui_bool(self, topic: str, value: bool) -> bool:
-        ok = self._generic_publishers.publish_bool(topic, value)
-        if not ok:
-            return False
-        self.get_logger().info(
-            "Published generic UI bool: topic={0} value={1}".format(
-                topic.strip(),
-                str(bool(value)).lower(),
-            )
-        )
-        return True
+        return self._ui_topic_publisher.publish_bool(topic, value)
 
     def publish_ui_typed(
         self,
@@ -385,76 +380,14 @@ class TabletInterfaceNode(Node):
         message_type: str,
         payload_text: str,
     ) -> bool:
-        try:
-            ok = self._typed_publishers.publish(topic, message_type, payload_text)
-        except ValueError as exc:
-            self.get_logger().warning(f"Failed to publish typed UI message: {exc}")
-            return False
-
-        if not ok:
-            return False
-
-        self.get_logger().info(
-            "Published typed UI message: topic={0} message_type={1}".format(
-                topic.strip(),
-                message_type.strip(),
-            )
+        return self._ui_topic_publisher.publish_typed(
+            topic,
+            message_type,
+            payload_text,
         )
-        return True
 
     def publish_ui_scalar(self, topic: str, value: float) -> bool:
-        ok = self._generic_publishers.publish_float(topic, value)
-        if not ok:
-            return False
-        self.get_logger().info(
-            "Published generic UI scalar: topic={0} value={1:.3f}".format(
-                topic.strip(),
-                float(value),
-            )
-        )
-        return True
-
-    def _resolve_sandbox_toggle_output_message_type(self) -> str:
-        normalized_message_type = self.sandbox_toggle_output_message_type.strip()
-        if normalized_message_type:
-            return normalized_message_type
-
-        legacy_mode = self.sandbox_toggle_output_mode.strip().lower()
-        if legacy_mode == "boolean":
-            return "std_msgs/msg/Bool"
-        if legacy_mode in {"", "numeric"}:
-            return "std_msgs/msg/Float64"
-        self.get_logger().warning(
-            "Unsupported sandbox_toggle_output_mode={0}, falling back to Float64".format(
-                self.sandbox_toggle_output_mode
-            )
-        )
-        return "std_msgs/msg/Float64"
-
-    def _ensure_sandbox_toggle_output_publisher(self) -> None:
-        normalized_topic = self.sandbox_toggle_output_topic.strip()
-        if not normalized_topic:
-            return
-
-        resolved_message_type = self._resolve_sandbox_toggle_output_message_type()
-        try:
-            publisher = self._typed_publishers.ensure_publisher(
-                normalized_topic,
-                resolved_message_type,
-            )
-        except ValueError as exc:
-            self.get_logger().warning(
-                f"Failed to prepare eager sandbox toggle publisher: {exc}"
-            )
-            return
-
-        if publisher is not None:
-            self.get_logger().info(
-                "Eager sandbox toggle publisher ready: topic={0} message_type={1}".format(
-                    normalized_topic,
-                    resolved_message_type,
-                )
-            )
+        return self._ui_topic_publisher.publish_scalar(topic, value)
 
     def _on_gripper_command(self, msg: Float64MultiArray) -> None:
         self._actuator_bridge.on_gripper_command(msg)
@@ -506,7 +439,7 @@ class TabletInterfaceNode(Node):
 
     def _on_timer(self) -> None:
         with self._cmd_lock:
-            twist = self._copy_twist(self._latest_twist)
+            twist = self._teleop_commands.copy_twist(self._latest_twist)
         mode = self._runtime_state.get_current_mode()
         self._runtime_state.clear_events()
 
@@ -514,17 +447,6 @@ class TabletInterfaceNode(Node):
         msg.twist = twist
         msg.mode = int(mode)
         self._publisher.publish(msg)
-
-    @staticmethod
-    def _copy_twist(twist: Twist) -> Twist:
-        out = Twist()
-        out.linear.x = float(twist.linear.x)
-        out.linear.y = float(twist.linear.y)
-        out.linear.z = float(twist.linear.z)
-        out.angular.x = float(twist.angular.x)
-        out.angular.y = float(twist.angular.y)
-        out.angular.z = float(twist.angular.z)
-        return out
 
     def _now_ms(self) -> int:
         return int(self.get_clock().now().nanoseconds / 1_000_000)

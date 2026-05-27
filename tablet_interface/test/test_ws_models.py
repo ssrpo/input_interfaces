@@ -38,7 +38,7 @@ def test_cmd_message_valid() -> None:
         {  # invalid mode
             "type": "teleop_cmd",
             "seq": 1,
-            "mode": 4,
+            "mode": 5,
             "linear": {"x": 0.0, "y": 0.0, "z": 0.0},
             "angular": {"x": 0.0, "y": 0.0, "z": 0.0},
         },
