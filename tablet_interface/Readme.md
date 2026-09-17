@@ -26,7 +26,7 @@ controller/UI development should target the manager stack.
   <a href="#ros-contract">ROS Contract</a> ·
   <a href="#configuration">Configuration</a> ·
   <a href="#development">Development</a> ·
-  <a href="#bloom-migration">Bloom Migration</a>
+  <a href="#bloom">Bloom</a>
 </p>
 
 ## Current State
@@ -509,24 +509,19 @@ the active Extender workspace split.
 | Tools | [`tools`](https://github.com/ISIR-EXTENDER/tools) | `800bed7 Merge pull request #4 from MegMll/topic/add_snake` | Provides `apriltag_detector`. |
 | Visual servoing | [`visual_servoing`](https://github.com/ISIR-EXTENDER/visual_servoing) | `bc6a33a first commit` | Robin's current visual-servoing package. |
 
-## Bloom Migration
+## Bloom
 
-[`Bloom`](https://github.com/ISIR-EXTENDER/bloom) is the WIP next-generation
-robot UI platform. It is being developed as a monorepo that combines frontend,
-backend API, widget contracts, runtime safety rules, storage, and ROS adapters.
+[`Bloom`](https://github.com/ISIR-EXTENDER/bloom) is the active Extender operator
+interface. It talks to `cartesian_manager` through its own FastAPI backend and ROS
+adapters, so it does not use this package.
 
-The goal is for Bloom to replace both `extender_ui` and the current
-`tablet_interface` backend flow once equivalent robot workflows are validated.
-Until then, this package remains the stable backend for integration week and
-Sandbox V0.0 development.
+`tablet_interface` is legacy. It stays buildable as the backend for the
+`extender_ui` rollback until Bloom's live sessions are accepted:
 
-Migration rule of thumb:
-
-1. Keep shipping stable Extender work in `extender_ui` + `tablet_interface`.
-2. Use Sandbox V0.0 as the reference workflow for new controller integrations.
-3. Port accepted workflows into Bloom incrementally.
-4. Replace this backend only after the matching Bloom workflow is tested with
-   the robot stack and accepted by the team.
+1. Put new operator workflows in Bloom, not here.
+2. Keep the command contract here in step with `cartesian_manager` while the
+   rollback is kept (topics, frames, gripper values).
+3. Retire this backend once the matching Bloom workflow is accepted on the robot.
 
 ## Contributing
 
